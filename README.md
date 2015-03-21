@@ -14,8 +14,7 @@ From app stores at a later date.
 
 Requires:
   1. `node.js` and `npm` from https://nodejs.org/
-  2. `cordova command line interface` install using npm `sudo npm install -g cordova` (OSX and Linux)
-      Further instructions at https://cordova.apache.org/docs/en/4.0.0/guide_cli_index.md.html
+  2. `cordova command line interface` install using npm `sudo npm install -g cordova` (OSX and Linux). Further instructions are at https://cordova.apache.org/docs/en/4.0.0/guide_cli_index.md.html
   3. `Browserify` install using npm `sudo npm install -g browserify`
   4. For Android devices: `Android SDK` from https://developer.android.com/sdk/index.html
   5. For iOS devices: `Xcode` from https://developer.apple.com/xcode/
