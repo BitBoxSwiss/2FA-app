@@ -1,5 +1,7 @@
 ## Digital Bitbox QR app
 
+**Work in progress. Not fully tested.**
+
 This is a Cordova application for Digital Bitbox QR-code verification. Use this app to verify you are signing the correct transaction. This avoids handcrafted man-in-the-middle attacks on compromised computers.
 
 The app also functions as a general purpose barcode scanner. It uses the wildabeast BarcodeScanner plugin.
