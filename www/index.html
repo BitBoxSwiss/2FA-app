@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+
+<!-- /*
+ 
+ The MIT License (MIT)
+
+ Copyright (c) 2015 Douglas J. Bakkum
+
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ and/or sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice shall be included
+ in all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
+ OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ OTHER DEALINGS IN THE SOFTWARE.
+
+*/ -->
+
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
+        <link rel="stylesheet" type="text/css" href="css/index.css" />
+        <link rel="stylesheet" type="text/css" href="css/digiboxfont.css" />
+        <link href='http://fonts.googleapis.com/css?family=Montserrat:400,700' rel='stylesheet' type='text/css'>
+        <title>Digital Bitbox QR</title>
+    </head>
+
+    <body>
+        
+        <!--div class="app"-->
+        <table>
+            <tr><td>
+                    <br><br><br><br>
+            </td></tr>
+            <tr><td>
+                    <db># digital BITBOX</db>
+            </td></tr>
+            <tr><td>
+                    <button class="blink" id="scanButton">Scan QR code</button>
+            </td></tr>
+            <tr><td>
+                    <p><div id="scanResults">&nbsp;</div></p>
+            </td></tr>
+            <tr><td>
+                    <button id="clearButton">Clear</button>
+            </td></tr>
+            <tr><td>
+                    <!--div id="testtext">Test text stuff.</div-->
+            </td></tr>
+            <tr><td>
+                    <!--button id="toggleButton" onClick="toggleAction();">Toggle</button-->
+            </td></tr>
+        </table>
+               
+
+        <script type="text/javascript" src="cordova.js"></script>
+        <script type="text/javascript" src="js/app.js"></script>
+        
+        <!--script>
+            var hidden = false;
+            function toggleAction() {
+                hidden = !hidden;
+                if(hidden) {
+                    document.getElementById('testtext').style.visibility = 'hidden';
+                } else {
+                    document.getElementById('testtext').style.visibility = 'visible';
+                } 
+            }
+            
+            function clearAction() {
+                document.getElementById('clear').style.visibility = 'hidden';
+            }
+        </script--> 
+        
+        
+        
+    </body>
+</html>
