@@ -1,4 +1,8 @@
 hooks
 platforms
 plugins
+node_modules
 www/js/app.js
+test.js
+*.swp
+*.swo
