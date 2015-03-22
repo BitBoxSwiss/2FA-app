@@ -120,13 +120,13 @@ prettyprint = function(res)
         pprnt = JSON.parse(res);
            
         // if crypto currency ouputs, clean print result
-        if (typeof pprnt.outputs == "object") {
+        if (typeof pprnt.verify_output == "object") {
             var pptmp = "Sending:\n\n";
-            for (var i = 0; i < pprnt.outputs.length; i++) {
-                s = new Buffer(pprnt.outputs[i].script, 'hex');
+            for (var i = 0; i < pprnt.verify_output.length; i++) {
+                s = new Buffer(pprnt.verify_output[i].script, 'hex');
                 s = new Script(s);
                 s = s.toAddress('livenet').toString();
-                pptmp += pprnt.outputs[i].value / 100000000 + " BTC\n" + s + "\n\n";
+                pptmp += pprnt.verify_output[i].value / 100000000 + " BTC\n" + s + "\n\n";
             }
             pprnt = pptmp; 
         } else {
