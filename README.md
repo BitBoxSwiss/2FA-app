@@ -28,6 +28,7 @@ Command line build and install:
   - `cd digitalbitboxQR`
   - `cordova platform add android`  
   - `cordova plugins add https://github.com/wildabeast/BarcodeScanner`
+  - `npm install bitcore` 
   - `browserify www/js/main.js -o www/js/app.js`
   - `cordova build android`
 
