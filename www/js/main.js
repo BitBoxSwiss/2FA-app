@@ -57,6 +57,7 @@ function startScan()
 	);
 }
 
+
 function clearResults() 
 {
     resultDiv.innerHTML = "";
@@ -118,6 +119,7 @@ prettyprint = function(res)
     try {
         pprnt = JSON.parse(res);
            
+        // if crypto currency ouputs, clean print result
         if (typeof pprnt.outputs == "object") {
             var pptmp = "Sending:\n\n";
             for (var i = 0; i < pprnt.outputs.length; i++) {
@@ -136,6 +138,10 @@ prettyprint = function(res)
     catch(err) {
         console.log(err)
         pprnt = res;
+    }
+
+    if (pprnt == "") {
+        pprnt = "--"
     }
     
     return pprnt;
