@@ -6,7 +6,7 @@ This smartphone app is a general purpose and minimalistic barcode scanner, using
 
 For the Digital Bitbox, it is used to verify QR codes before signing a transaction. This avoids handcrafted man-in-the-middle attacks on compromised computers by verifying that you are signing the correct transaction. 
 
-Just click the button to scan. Plaintext is printed without formatting. JSON-formatted text is pretty-printed. AES-256-CBC encrypted text is decrypted with a user-supplied password (only hardcoded at the moment).
+Just click the button to scan. Plaintext is printed without formatting. JSON-formatted text is pretty-printed. AES-256-CBC encrypted text is decrypted with a user-supplied password (hardcoded at the moment).
 
 
 ## Installation
@@ -25,7 +25,7 @@ Requires:
 
 Command line build and install:
 
-```bash
+```
 git clone https://github.com/digitalbitbox/QR_app.git
 cordova create digitalbitboxQR --copy-from=./QR_code/
 cd digitalbitboxQR
