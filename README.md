@@ -2,9 +2,11 @@
 
 **Work in progress. Not fully tested.**
 
-This is a Cordova application for Digital Bitbox QR-code verification. Use this app to verify you are signing the correct transaction. This avoids handcrafted man-in-the-middle attacks on compromised computers.
+This smartphone app is a general purpose and minimalistic barcode scanner, using the wildabeast BarcodeScanner plugin. 
 
-The app also functions as a general purpose barcode scanner. It uses the wildabeast BarcodeScanner plugin.
+For the Digital Bitbox, it is used to verify QR codes before signing a transaction. This avoids handcrafted man-in-the-middle attacks on compromised computers by verifying that you are signing the correct transaction. 
+
+Just click the button to scan. Plaintext is printed without formatting. JSON-formatted text is pretty-printed. AES-256-CBC encrypted text is decrypted with a user-supplied password (only hardcoded at the moment).
 
 
 ## Installation
@@ -23,16 +25,18 @@ Requires:
 
 Command line build and install:
 
-  - `git clone https://github.com/digitalbitbox/QR_app.git`
-  - `cordova create digitalbitboxQR --copy-from=./QR_code/` 
-  - `cd digitalbitboxQR`
-  - `cordova platform add android`  
-  - `cordova plugins add https://github.com/wildabeast/BarcodeScanner`
-  - `npm install bitcore` 
-  - `browserify www/js/main.js -o www/js/app.js`
-  - `cordova build android`
+```bash
+git clone https://github.com/digitalbitbox/QR_app.git
+cordova create digitalbitboxQR --copy-from=./QR_code/
+cd digitalbitboxQR
+cordova platform add android
+cordova plugins add https://github.com/wildabeast/BarcodeScanner
+npm install bitcore
+browserify www/js/main.js -o www/js/app.js
+cordova build android
+```
 
-To install on your phone, connect your phone to your computer and run  `cordova run android`. Developer permissions are needed (https://developer.android.com/tools/device.html).
+To install on your smartphone phone, connect it to your computer and run  `cordova run android`. Developer permissions are needed - see https://developer.android.com/tools/device.html.
 
-Replace `android` with `ios` for iPhones.
+Replace `android` with `ios` for iPhones and use Xcode to install.
 
