@@ -2,7 +2,7 @@
 <widget id="com.digitalbitbox.qr" version="0.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>Digital Bitbox QR</name>
     <description>Scan QR codes to verify transactions.</description>
-    <icon src="www/img/logo_bg.png" />
+    <icon src="www/img/logo_circle_bg.png" />
     <author email="info@digitalbitbox.com" href="http://digitalbitbox.com">Digital Bitbox</author>
     <content src="index.html" />
     <access origin="*" />
