@@ -38,7 +38,7 @@ cordova build android
 
 To install on an Android phone, connect it to your computer and type  `cordova run android`. Developer permissions are explained here https://developer.android.com/tools/device.html. 
 
-To install on an iPhone, replace `android` with `ios`. Then open the file `platforms/ios/Digital Bitbox QR.xcodeproj` in Xcode, select your iPhone device from the dropdown menu, and push the `Run` button. An iOS Developer Program membership, or a jailbroke phone, is required for installation.
+To install on an iPhone, replace `android` with `ios` and open the file `platforms/ios/Digital Bitbox QR.xcodeproj` in Xcode. An iOS Developer Program membership, or a jailbroke phone, is required.
 
 
 
