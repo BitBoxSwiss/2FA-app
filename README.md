@@ -26,17 +26,21 @@ Requires:
 Command line build and install:
 
 ```
-git clone https://github.com/digitalbitbox/QR_app.git
-cordova create digitalbitboxQR --copy-from=./QR_code/
+git clone --recursive https://github.com/digitalbitbox/QR_app.git
+cordova create digitalbitboxQR com.digitalbitbox.qr "Digital Bitbox QR" --copy-from=./QR_app/
 cd digitalbitboxQR
 cordova platform add android
+cordova platform add ios
 cordova plugins add https://github.com/wildabeast/BarcodeScanner
 npm install bitcore
 browserify www/js/main.js -o www/js/app.js
 cordova build android
+cordova build ios
 ```
 
-To install on your smartphone phone, connect it to your computer and run  `cordova run android`. Developer permissions are needed - see https://developer.android.com/tools/device.html.
+To install on an Android phone, connect it to your computer and type  `cordova run android`. Developer permissions are explained here https://developer.android.com/tools/device.html. 
 
-Replace `android` with `ios` for iPhones and use Xcode to install.
+To install on an iPhone, open `platforms/ios/Digital Bitbox QR.xcodeproj` in Xcode, select your device from the dropdown menu, and push the `Run` button.
+
+
 
