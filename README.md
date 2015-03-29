@@ -15,12 +15,12 @@ From app stores at a later date.
 ## Installation from source
 
 Requires:
-  1. **Node.js** and **npm** from https://nodejs.org/
+  1. [**Node.js** and **npm**](https://nodejs.org/)
   2. **Cordova command line interface** installed using npm `sudo npm install -g cordova` (OSX and Linux).
   3. **Browserify** installed using npm `sudo npm install -g browserify`
   4. **Bitcore** installed using npm `npm install bitcore`
-  5. For Android devices: **Android SDK** from https://developer.android.com/sdk/index.html
-  6. For iOS devices: **Xcode** from https://developer.apple.com/xcode/
+  5. For Android devices: [**Android SDK**](https://developer.android.com/sdk/)
+  6. For iOS devices: [**Xcode**](https://developer.apple.com/xcode/)
 
 Command line build and install:
 
