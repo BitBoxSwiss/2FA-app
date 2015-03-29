@@ -1,12 +1,10 @@
 ## Digital Bitbox QR app
 
-**Work in progress. Not fully tested.**
+This smartphone app is a general purpose barcode scanner with a minimalistic interface. It uses the wildabeast BarcodeScanner plugin. 
 
-This smartphone app is a general purpose and minimalistic barcode scanner, using the wildabeast BarcodeScanner plugin. 
+For the Digital Bitbox, it is also used to verify QR codes before signing a transaction. This avoids handcrafted man-in-the-middle attacks on compromised computers by verifying that you are signing the correct transaction. 
 
-For the Digital Bitbox, it is used to verify QR codes before signing a transaction. This avoids handcrafted man-in-the-middle attacks on compromised computers by verifying that you are signing the correct transaction. 
-
-Just click the button to scan. Plain text is printed as is. JSON-formatted text is pretty-printed. AES-256-CBC encrypted text is decrypted with a user-supplied password (hardcoded at the moment).
+Just click the button to scan. Plain text is printed as is. JSON-formatted text is pretty-printed. AES-256-CBC encrypted text is decrypted with a user-supplied password, which is set after clicking on the options icon at the bottom of the screen.
 
 
 ## Installation
@@ -31,7 +29,8 @@ git clone --recursive https://github.com/digitalbitbox/QR_app.git
 cordova create digitalbitboxQR com.digitalbitbox.qr "Digital Bitbox QR" --copy-from=./QR_app/
 cd digitalbitboxQR
 cordova platform add android 
-cordova plugins add https://github.com/wildabeast/BarcodeScanner
+cordova plugin add https://github.com/wildabeast/BarcodeScanner
+cordova plugin add https://github.com/apache/cordova-plugin-file.git
 browserify www/js/main.js -o www/js/app.js
 cordova build android
 ```

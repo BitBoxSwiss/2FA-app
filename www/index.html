@@ -35,61 +35,47 @@
         <link rel="stylesheet" type="text/css" href="css/digiboxfont.css" />
         <link href='http://fonts.googleapis.com/css?family=Montserrat:400,700' rel='stylesheet' type='text/css'>
         <title>Digital Bitbox QR</title>
+        
+        <script type="text/javascript" src="cordova.js" async></script>
+        <script type="text/javascript" src="js/app.js" async></script>
+    
     </head>
 
     <body>
-        
-        <!--div class="app"-->
-        <table>
-            <tr><td>
-                    <br><br><br><br>
-            </td></tr>
-            <tr><td>
-                    <db># digital BITBOX</db>
-            </td></tr>
-            <tr><td>
-                    <button class="blink" id="scanButton">Scan QR code</button>
-            </td></tr>
-            <tr><td>
-                    <div id="scanResults"></div>
-            </td></tr>
-            <tr><td>
-                    <button id="clearButton">Clear</button>
-            </td></tr>
-            <!--tr><td>
-                    <div id="testtext" class="blocktext"><pre>
-{
-    touchbutton":"touched (hard coded)" ,
-    "seed":"success"
-}
-                    </pre></div>
-            </td></tr-->
-            <tr><td>
-                    <!--button id="toggleButton" onClick="toggleAction();">Toggle</button-->
-            </td></tr>
-        </table>
-               
+       
 
-        <script type="text/javascript" src="cordova.js"></script>
-        <script type="text/javascript" src="js/app.js"></script>
+        <br><br><br><br><db># digital&nbsp;BITBOX</db><br><br>
+       
+        <div id="scanDialog">
+            <button id="scanButton" class="buttonRound blink">Scan</button>
+            <br>
+            <br>
+            <div id="scanResults" class="scanResults"></div>
+            <br>
+            <button id="clearButton" class="buttonRound hidden">Clear</button>
+        </div>
         
-        <!--script>
-            var hidden = false;
-            function toggleAction() {
-                hidden = !hidden;
-                if(hidden) {
-                    document.getElementById('testtext').style.visibility = 'hidden';
-                } else {
-                    document.getElementById('testtext').style.visibility = 'visible';
-                } 
-            }
-            
-            function clearAction() {
-                document.getElementById('clear').style.visibility = 'hidden';
-            }
-        </script--> 
+        <div id="pwDialog" class="password">
+            <input type="text" id="pwText" class="textInput" value="">
+            <br>
+            <button id="submitpwButton" class="buttonRound">Submit</button>
+            <button id="cancelpwButton" class="buttonRound">Cancel</button>
+            <br>
+            <br>
+        </div>
         
+        <div id="footer" class="footer">
+            <div id="optionButtons" class="hidden">
+                <button id="changepwButton" class="buttonSimple"><u>Set password</u></button>
+                <button id="displaypwButton" class="buttonSimple"><u>Display password</u></button>
+                <button id="forgetpwButton" class="buttonSimple"><u>Forget password</u></button>
+                <br>
+            </div>
+            <img id="settingsIcon" src="img/settings.png" alt="Options" style="width:40px; height:auto">
+        </div>
+   
+
         
-        
+    
     </body>
 </html>

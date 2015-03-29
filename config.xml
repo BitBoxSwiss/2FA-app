@@ -2,11 +2,17 @@
 <widget id="com.digitalbitbox.qr" version="0.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>Digital Bitbox QR</name>
     <description>Scan QR codes to verify transactions.</description>
-    <icon src="icons/logo_circle_bg.png" />
     <author email="info@digitalbitbox.com" href="http://digitalbitbox.com">Digital Bitbox</author>
     <content src="index.html" />
     <access origin="*" />
     
+    <preference name="Orientation" value="portrait" />
+    <preference name="DisallowOverscroll" value="true"/>
+    <preference name="AndroidPersistentFileLocation" value="Internal" />
+    <preference name="iosPersistentFileLocation" value="Library" />
+    
+    
+    <icon src="icons/logo_circle_bg.png" />
     
     <platform name="android">
         <icon src="icons/logo-android-round/drawable-ldpi/ic_launcher.png" density="ldpi" />
