@@ -44,7 +44,6 @@ function init()
     document.querySelector("#changepwButton").addEventListener("touchstart", setKey, false);
     document.querySelector("#submitpwButton").addEventListener("touchstart", saveKey, false);
     document.querySelector("#forgetpwButton").addEventListener("touchstart", forgetKey, false);
-    document.querySelector("#displaypwButton").addEventListener("touchstart", displayKey, false);
     document.querySelector("#settingsIcon").addEventListener("touchstart", displaySettings, false);
     
 	resultDiv = document.querySelector("#scanResults");
@@ -112,18 +111,6 @@ function forgetKey() {
     hideOptionButtons();
     showScanDialog();
     resultDiv.innerHTML = "Password erased";
-}
-
-
-function displayKey() {
-    hideOptionButtons();
-    showScanDialog();
-    if(key == "") {
-        resultDiv.innerHTML = "--";
-    }
-    else {
-        resultDiv.innerHTML = key;
-    }
 }
 
 
