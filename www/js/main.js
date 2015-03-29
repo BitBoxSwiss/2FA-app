@@ -65,10 +65,10 @@ function hideScanDialog() {
 
 
 function showPasswordDialog() {
+    hideOptionButtons();
     document.getElementById("settingsIcon").style.visibility = "hidden";
     document.getElementById("pwDialog").style.visibility = "visible";
     document.getElementById("pwText").focus();
-    hideOptionButtons();
 }
 
 
@@ -99,9 +99,9 @@ function displaySettings() {
 
 
 function setKey() {
-    showPasswordDialog();
     hideScanDialog();
     resultDiv.innerHTML = "";
+    showPasswordDialog();
 }
 
 
@@ -128,7 +128,7 @@ function saveKey() {
         
         hidePasswordDialog();
         showScanDialog();
-        resultDiv.innerHTML = "Password submitted";
+        resultDiv.innerHTML = "Password set";
     
     }
     catch(err) {
@@ -141,7 +141,7 @@ function saveKey() {
 function cancel() {
     hidePasswordDialog();
     showScanDialog();
-    resultDiv.innerHTML = "Canceled";
+    clearResults();
 }
 
 

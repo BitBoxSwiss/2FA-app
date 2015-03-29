@@ -80,31 +80,38 @@ pre {
    */
 }
 
-.buttonSimple {
-    font-size:14px;
-    background-color:transparent;
+.buttonRound {
+    color:#EEEEEE;
+    font-size:16px;
+    margin:10px 5px;
+    padding:12px 24px;
+    background-color:#444444;
     border-style:none;
+    border-radius:24px;
+    -webkit-border-radius:24px;
     appearance:none;
     -webkit-appearance:none;
 }
 
-.buttonRound {
-    color:#EEE;
-    font-size:16px;
+.buttonSimple {
+    color:#000000;
+    font-size:14px;
     margin:10px 5px;
-    padding:12px 24px;
-    background-color:#444;
+    padding:6px 12px;
+    
+    
+    background-color:#FFFFFF;
     border-style:none;
-    border-radius:25px;
-    -webkit-border-radius:25px;
+    border-radius:12px;
+    -webkit-border-radius:12px;
     appearance:none;
     -webkit-appearance:none;
 }
 
 .textInput {
-    color:#000;
+    color:#000000;
     font-size:12px;
-    margin:10px 10px;
+    margin:10px 5px;
     padding:4px 7px;
     background-color:transparent;
     border-style:solid;
@@ -120,7 +127,7 @@ pre {
 }
 
 .password {
-    visibility:hidden;
+    visibility:hi dden;
     width:100%;
 }
 
