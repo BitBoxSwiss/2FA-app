@@ -118,12 +118,6 @@ function saveKey() {
     try {
         key = document.getElementById("pwText").value;
         
-        // Testing
-        // //var key = "0000";
-        //key = Crypto.createHash("sha256").update(key).digest();
-        //key = Crypto.createHash("sha256").update(key).digest();
-        //key = new Buffer(key, "binary").toString("hex");
-        
         writeKey();
         
         hidePasswordDialog();
