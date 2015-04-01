@@ -35,7 +35,7 @@ browserify www/js/main.js -o www/js/app.js
 cordova build android
 ```
 
-To install on an Android phone, connect it to your computer and type  `cordova run android`. Developer permissions are explained here https://developer.android.com/tools/device.html. 
+To install on an Android phone, connect it to your computer and type  `cordova run android`. [Developer permissions](https://developer.android.com/tools/device.html) are required. 
 
 To install on an iPhone, replace `android` with `ios` and open the file `platforms/ios/Digital Bitbox QR.xcodeproj` in Xcode. An iOS Developer Program membership, or a jailbroke phone, is required.
 
