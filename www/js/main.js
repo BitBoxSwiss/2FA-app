@@ -68,7 +68,7 @@ function showPasswordDialog() {
     hideOptionButtons();
     document.getElementById("settingsIcon").style.visibility = "hidden";
     document.getElementById("pwDialog").style.visibility = "visible";
-    document.getElementById("pwText").focus();
+    //document.getElementById("pwText").focus();
 }
 
 
@@ -218,7 +218,7 @@ function clearResults()
 }
 
 
-aes_cbc_b64_decrypt = function(ciphertext)
+function aes_cbc_b64_decrypt(ciphertext)
 {
     var res;
     try {
@@ -240,7 +240,7 @@ aes_cbc_b64_decrypt = function(ciphertext)
 }
 
 
-aes_cbc_b64_encrypt = function(plaintext)
+function aes_cbc_b64_encrypt(plaintext)
 {
     try {
         var iv = Crypto.pseudoRandomBytes(16);
@@ -256,7 +256,7 @@ aes_cbc_b64_encrypt = function(plaintext)
 }
 
 
-prettyprint = function(res)
+function prettyprint(res)
 {
     // if JSON string, pretty print result
     var pprnt;
@@ -272,6 +272,9 @@ prettyprint = function(res)
                 s = new Script(s);
                 s = s.toAddress("livenet").toString();
                 pptmp += pprnt.verify_output[i].value / 100000000 + " BTC\n" + s + "\n\n";
+            }
+            if (typeof pprnt.pin == "string") {
+                pptmp += "\nLock code:  " + pprnt.pin;
             }
             pprnt = pptmp ;
         } else {
