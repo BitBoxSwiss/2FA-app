@@ -50,14 +50,14 @@ Scan a plaintext QR code:
 ![alt tag](img/screen_scan_url.png)
 
 
-Scan a Digital Bitbox verification QR code:
+Scan an AES-encrypted Digital Bitbox verification QR code:
 
 ![alt tag](img/echo_qrcode.png)
 
 ![alt tag](img/screen_scan_sign_lock.png)
 
 
-Change the password for decrypting the Digital Bitbox verification QR code:
+Set the password for decrypting the Digital Bitbox verification QR code:
 
 ![alt tag](img/screen_options.png)
 ![alt tag](img/screen_pwdialog_keyboard.png)
