@@ -2,7 +2,7 @@
 
 ![alt tag](img/screen_start.png)
 
-This smartphone app is a general purpose barcode scanner with a minimalistic interface. It uses the wildabeast BarcodeScanner plugin. 
+This smartphone app is a general purpose barcode scanner with a minimalist interface. It uses the wildabeast BarcodeScanner plugin. 
 
 For the Digital Bitbox, it is also used to verify QR codes before signing a transaction. This avoids handcrafted man-in-the-middle attacks on compromised computers by verifying that you are signing the correct transaction. 
 
