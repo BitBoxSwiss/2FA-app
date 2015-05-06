@@ -1,6 +1,8 @@
 ## Digital Bitbox QR app
 
-This smartphone app is a general purpose barcode scanner with a minimalistic interface. It uses the wildabeast BarcodeScanner plugin. 
+![alt tag](img/screen_start.png)
+
+This smartphone app is a general purpose barcode scanner with a minimalist interface. It uses the wildabeast BarcodeScanner plugin. 
 
 For the Digital Bitbox, it is also used to verify QR codes before signing a transaction. This avoids handcrafted man-in-the-middle attacks on compromised computers by verifying that you are signing the correct transaction. 
 
@@ -38,6 +40,30 @@ cordova build android
 To install on an Android phone, connect it to your computer and type  `cordova run android`. [Developer permissions](https://developer.android.com/tools/device.html) are required. 
 
 To install on an iPhone, replace `android` with `ios` and open the file `platforms/ios/Digital Bitbox QR.xcodeproj` in Xcode. An iOS Developer Program membership, or a jailbroke phone, is required.
+
+## Using the app
+
+Scan a plaintext QR code:
+
+![alt tag](img/website_logo_qrcode_small.png)
+
+![alt tag](img/screen_scan_url.png)
+
+
+Scan an AES-encrypted Digital Bitbox verification QR code:
+
+![alt tag](img/echo_qrcode.png)
+
+![alt tag](img/screen_scan_sign_lock.png)
+
+
+Set the password for decrypting the Digital Bitbox verification QR code:
+
+![alt tag](img/screen_options.png)
+![alt tag](img/screen_pwdialog_keyboard.png)
+
+
+
 
 
 
