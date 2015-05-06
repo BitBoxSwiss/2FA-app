@@ -26,7 +26,7 @@ Command line build and install:
 
 ```
 git clone --recursive https://github.com/digitalbitbox/QR_app.git
-cordova create digitalbitboxQR com.digitalbitbox.qr "Digital Bitbox QR" --copy-from=./QR_app/
+cordova create digitalbitboxQR com.digitalbitbox.qr "DigitalBitboxQR" --copy-from=./QR_app/
 cd digitalbitboxQR
 cordova platform add android 
 cordova plugin add https://github.com/wildabeast/BarcodeScanner
