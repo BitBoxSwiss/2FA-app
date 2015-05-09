@@ -19,8 +19,8 @@ From app stores at a later date.
 Requires:
   1. [**Node.js** and **npm**](https://nodejs.org/)
   2. **Cordova command line interface** installed using npm `sudo npm install -g cordova` (OSX and Linux).
+  4. **Bitcore** installed using npm `npm install -g bitcore`
   3. **Browserify** installed using npm `sudo npm install -g browserify`
-  4. **Bitcore** installed using npm `npm install bitcore`
   5. For Android devices: [**Android SDK**](https://developer.android.com/sdk/)
   6. For iOS devices: [**Xcode**](https://developer.apple.com/xcode/)
 
@@ -32,7 +32,7 @@ cordova create digitalbitboxQR com.digitalbitbox.qr "DigitalBitboxQR" --copy-fro
 cd digitalbitboxQR
 cordova platform add android 
 cordova plugin add https://github.com/wildabeast/BarcodeScanner
-cordova plugin add https://github.com/apache/cordova-plugin-file.git
+cordova plugin add cordova-plugin-file
 browserify www/js/main.js -o www/js/app.js
 cordova build android
 ```
