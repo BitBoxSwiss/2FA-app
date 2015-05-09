@@ -32,7 +32,7 @@ cordova create digitalbitboxQR com.digitalbitbox.qr "DigitalBitboxQR" --copy-fro
 cd digitalbitboxQR
 cordova platform add android 
 cordova plugin add https://github.com/wildabeast/BarcodeScanner
-cordova plugin add cordova-plugin-file
+cordova plugin add org.apache.cordova.file
 browserify www/js/main.js -o www/js/app.js
 cordova build android
 ```
