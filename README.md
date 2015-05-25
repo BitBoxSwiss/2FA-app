@@ -1,6 +1,6 @@
 ## Digital Bitbox QR app
 
-![alt tag](img/screen_start.png)
+![alt tag](img/ios/screen_start.png)
 
 This smartphone app is a general purpose barcode scanner with a minimalist interface. It uses the wildabeast BarcodeScanner plugin. 
 
@@ -47,20 +47,20 @@ Scan a plaintext QR code:
 
 ![alt tag](img/website_logo_qrcode_small.png)
 
-![alt tag](img/screen_scan_url.png)
+![alt tag](img/ios/screen_scan_url.png)
 
 
 Scan an AES-encrypted Digital Bitbox verification QR code:
 
 ![alt tag](img/echo_qrcode.png)
 
-![alt tag](img/screen_scan_sign_lock.png)
+![alt tag](img/ios/screen_scan_sign_lock.png)
 
 
 Set the password for decrypting the Digital Bitbox verification QR code:
 
-![alt tag](img/screen_options.png)
-![alt tag](img/screen_pwdialog_keyboard.png)
+![alt tag](img/ios/screen_options.png)
+![alt tag](img/ios/screen_pwdialog_keyboard.png)
 
 
 
