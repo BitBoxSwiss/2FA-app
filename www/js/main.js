@@ -26,7 +26,7 @@
 
 
 var Crypto = require("crypto");
-var Bitcore = require("/usr/local/lib/node_modules/bitcore");
+var Bitcore = require.main.paths("bitcore");
 var Script = Bitcore.Script;
 
 var resultDiv;
