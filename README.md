@@ -11,7 +11,8 @@ Just click the button to scan. Plain text is printed as is. JSON-formatted text 
 
 ## Installation
 
-From app stores at a later date.
+- [Google Play Store for Android](https://play.google.com/store/apps/details?id=com.digitalbitbox.qr)
+- App Store for iOS at a later date
 
 
 ## Installation from source
