@@ -56,12 +56,12 @@ body {
     margin:0px;
     text-align:center;
     word-wrap:break-word;
-    font-family: Montserrat, 'HelveticaNeue-Light', 'HelveticaNeue', Helvetica, Arial, sans-serif;
+    font-family: 'HelveticaNeue-Light', 'HelveticaNeue', Helvetica, Arial, sans-serif;
     font-size:12px;
 }
         
 pre {
-    font-family: Montserrat, 'HelveticaNeue-Light', 'HelveticaNeue', Helvetica, Arial, sans-serif;
+    font-family: 'HelveticaNeue-Light', 'HelveticaNeue', Helvetica, Arial, sans-serif;
     text-align: left;
     display: inline-block;
     zoom: 1;
