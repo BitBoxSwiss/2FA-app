@@ -5,4 +5,6 @@ www/js/app.js
 test.js
 *.swp
 *.swo
+*.apk*
+keystore
 .DS_Store
