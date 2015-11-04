@@ -18,12 +18,10 @@ Just click the button to scan. Plain text is printed as is. JSON-formatted text 
 ## Installation from source
 
 Requires:
-  1. [**Node.js** and **npm**](https://nodejs.org/)
+  1. [**Node.js** and **npm**](https://nodejs.org/) (tested with Node.js v4.2.2 and npm v2.14.7)
   2. **Cordova command line interface** installed using npm `sudo npm install -g cordova` (OSX and Linux).
-  4. **Bitcore** installed using npm `npm install -g bitcore`
-  3. **Browserify** installed using npm `sudo npm install -g browserify`
-  5. For Android devices: [**Android SDK**](https://developer.android.com/sdk/)
-  6. For iOS devices: [**Xcode**](https://developer.apple.com/xcode/)
+  3. For Android devices: [**Android SDK**](https://developer.android.com/sdk/)
+  4. For iOS devices: [**Xcode**](https://developer.apple.com/xcode/)
 
 Command line build and install:
 
@@ -33,7 +31,8 @@ cordova create digitalbitboxQR com.digitalbitbox.qr "DigitalBitboxQR" --copy-fro
 cd digitalbitboxQR
 cordova platform add android 
 cordova plugin add https://github.com/wildabeast/BarcodeScanner
-cordova plugin add org.apache.cordova.file
+cordova plugin add cordova-plugin-file
+npm install bitcore
 browserify www/js/main.js -o www/js/app.js
 cordova build android
 ```
