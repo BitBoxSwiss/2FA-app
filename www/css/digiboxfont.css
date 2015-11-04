@@ -26,14 +26,26 @@
 
 
 @font-face {
-    font-family: "Digibox";
-    src: url("../fonts/Digibox.woff") format("woff"), /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
-         url("../fonts/Digibox.ttf") format("truetype"); /* Chrome 4+, Firefox 3.5, Opera 10+, Safari 3—5 */
+    font-family: "DigiboxSimple";
+    src: url("../font/DigiboxSimple.woff") format("woff"), /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+         url("../font/DigiboxSimple.ttf") format("truetype"); /* Chrome 4+, Firefox 3.5, Opera 10+, Safari 3—5 */
 }
 
-db {    
+@font-face {
+    font-family: "Digibox";
+    src: url("../font/Digibox.woff") format("woff"), /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+         url("../font/Digibox.ttf") format("truetype"); /* Chrome 4+, Firefox 3.5, Opera 10+, Safari 3—5 */
+}
+
+db {
     margin: 0 0 25px;
     font-size: 50px;
     font-family: "Digibox";
+}
+
+dbs {
+    margin: 0 0 25px;
+    font-size: 50px;
+    font-family: "DigiboxSimple";
 }
 
