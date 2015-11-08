@@ -1,4 +1,4 @@
-## Digital Bitbox QR app
+## Digital Bitbox | Two factor authentication app
 
 ![alt tag](img/ios/screen_start.png)
 
@@ -32,6 +32,8 @@ cd digitalbitboxQR
 cordova platform add android 
 cordova plugin add https://github.com/wildabeast/BarcodeScanner
 cordova plugin add cordova-plugin-file
+cordova plugin add cordova-zeroconf-plugin  #  mDNS (currently Android only)
+cordova plugin add cordova-plugin-crosswalk-webview  #  supports websockets
 npm install bitcore
 browserify www/js/main.js -o www/js/app.js
 cordova build android
