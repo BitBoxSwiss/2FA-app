@@ -2,7 +2,7 @@
  
  The MIT License (MIT)
 
- Copyright (c) 2015 Douglas J. Bakkum
+ Copyright (c) 2015 Douglas J. Bakkum, Shift Devices AG
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the "Software"),
@@ -32,9 +32,14 @@ var Script = Bitcore.Script;
 var resultDiv;
 var keyFile = null;
 var key;
+var ws = null;
 
+
+const PORT = 25698;
+
+
+// ----------------------------------------------------------------------------
 document.addEventListener("deviceready", init, false);
-
 function init()
 {
     document.querySelector("#scanButton").addEventListener("touchstart", startScan, false);
@@ -45,6 +50,7 @@ function init()
     document.querySelector("#submitpwButton").addEventListener("touchstart", saveKey, false);
     document.querySelector("#forgetpwButton").addEventListener("touchstart", forgetKey, false);
     document.querySelector("#settingsIcon").addEventListener("touchstart", displaySettings, false);
+    document.querySelector("#pairButton").addEventListener("touchstart", pairPc, false);
     
 	resultDiv = document.querySelector("#scanResults");
     
@@ -52,6 +58,65 @@ function init()
 }
 
 
+// ----------------------------------------------------------------------------
+function wsStart(addr, name) {
+    if(!ws) {
+        ws = new WebSocket(addr);
+
+        ws.onopen = function () {
+            wsSend('Hello dbb app!');
+            console.log('WebSocket openned');
+            showScanDialog();
+            resultDiv.innerHTML = '2FA paired to:<br>' + name;
+        };
+
+        ws.onmessage = function (event) {
+            console.log('WebSocket received: ', event.data);
+        };
+
+        ws.onerror = function () {
+            console.log('WebSocket error!');
+        };
+
+        ws.onclose = function (event) {
+            console.log('WebSocket closed ', event.code);
+            showScanDialog();
+            resultDiv.innerHTML = '2FA not paired';
+            ws = null;
+        };
+    }
+};
+
+function wsStop(message){
+    if(ws) {
+        ws.close();
+    }
+}
+
+function wsSend(message){
+    if(ws) {
+        ws.send(message);
+    }
+}
+
+function wsFind() {
+    ZeroConf.watch("_dbb._tcp.local.", wsFindSuccess);
+}
+
+function wsFindSuccess(obj) {
+    var addr = 'ws://' + obj.service.addresses[0] + ':' + obj.service.port;
+    var name = obj.service.name;
+    wsStart(addr, name);
+    console.log('WebSocket found at ', addr);
+    console.log(obj.service);
+}
+
+//function mdnsAdvertise() {
+    //ZeroConf.register("_http._tcp.local.", "DBBapp", PORT, "name=DBBapp_text");
+//}
+
+
+// ----------------------------------------------------------------------------
 function showScanDialog() {
     document.getElementById("scanDialog").style.visibility = "visible";
     document.getElementById("clearButton").style.display = "inline";
@@ -90,10 +155,23 @@ function hideOptionButtons() {
 
 
 function displaySettings() {
+    
+    wsSend('Touched settings button');
+    
     if(document.getElementById("optionButtons").style.display == "inline") {
        hideOptionButtons();
     } else {
        showOptionButtons();
+    }
+}
+
+
+// ----------------------------------------------------------------------------
+function pairPc() {
+    if(ws) {
+        wsStop();
+    } else {
+        wsFind();
     }
 }
 
@@ -218,6 +296,7 @@ function clearResults()
 }
 
 
+// ----------------------------------------------------------------------------
 function aes_cbc_b64_decrypt(ciphertext)
 {
     var res;
