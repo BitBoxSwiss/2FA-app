@@ -29,49 +29,93 @@ var Crypto = require("crypto");
 var Bitcore = require("bitcore");
 var Script = Bitcore.Script;
 
-var resultDiv;
+var infoTextDiv;
+var pairStrengthDiv;
 var keyFile = null;
 var key;
 var ws = null;
+var wsPollState;
+var wsPollInterval = 500; // msec
+var blinkcode = [];
+
+var pairIcon,
+    pairDialog,
+    pwDialog,
+    pwText,
+    clearButton,
+    settingsIcon,
+    optionButtons,
+    scanButton; 
 
 
 const PORT = 25698;
 
 
 // ----------------------------------------------------------------------------
+// Startup
+// 
+
 document.addEventListener("deviceready", init, false);
+
 function init()
 {
     document.querySelector("#scanButton").addEventListener("touchstart", startScan, false);
 	document.querySelector("#clearButton").addEventListener("touchstart", clearResults, false);
 	
-    document.querySelector("#cancelpwButton").addEventListener("touchstart", cancel, false);
+    document.querySelector("#cancelButton").addEventListener("touchstart", cancel, false);
     document.querySelector("#changepwButton").addEventListener("touchstart", setKey, false);
     document.querySelector("#submitpwButton").addEventListener("touchstart", saveKey, false);
     document.querySelector("#forgetpwButton").addEventListener("touchstart", forgetKey, false);
     document.querySelector("#settingsIcon").addEventListener("touchstart", displaySettings, false);
+    document.querySelector("#showScanButton").addEventListener("touchstart", showScanButton, false);
     document.querySelector("#pairButton").addEventListener("touchstart", pairPc, false);
     
-	resultDiv = document.querySelector("#scanResults");
+    document.querySelector("#blinkDelButton").addEventListener("touchstart", blinkDel, false);
+    document.querySelector("#blink1Button").addEventListener("touchstart", blinkPress1, false);
+    document.querySelector("#blink2Button").addEventListener("touchstart", blinkPress2, false);
+    document.querySelector("#blink3Button").addEventListener("touchstart", blinkPress3, false);
+    document.querySelector("#blink4Button").addEventListener("touchstart", blinkPress4, false);
     
+    pwText = document.getElementById("pwText");
+    pwDialog = document.getElementById("pwDialog");
+	pairStrengthDiv = document.querySelector("#pairStrength");
+    pairIcon = document.getElementById("pairIcon");
+    pairDialog = document.getElementById("pairDialog");
+	infoTextDiv = document.querySelector("#infoText");
+    clearButton = document.getElementById("clearButton");
+    settingsIcon = document.getElementById("settingsIcon");
+    optionButtons = document.getElementById("optionButtons");
+    scanButton = document.getElementById("scanButton");
+
     openFile();
+    wsPoll();
 }
 
 
 // ----------------------------------------------------------------------------
-function wsStart(addr, name) {
-    if(!ws) {
-        ws = new WebSocket(addr);
+// Websockets
+//
 
+function wsPoll() {
+    wsPollState = setInterval(wsFind, wsPollInterval);
+}
+
+function wsStart(addr, name) {
+    if(!ws || ws.readyState == ws.CLOSED) {
+        console.log('WebSocket found at ', addr);
+        
+        ws = new WebSocket(addr);
+    
         ws.onopen = function () {
-            wsSend('Hello dbb app!');
             console.log('WebSocket openned');
-            showScanDialog();
-            resultDiv.innerHTML = '2FA paired to:<br>' + name;
+            wsSend('Hello dbb app!');
+            clearInterval(wsPollState);
+            pairIcon.style.visibility = "visible";
         };
 
         ws.onmessage = function (event) {
             console.log('WebSocket received: ', event.data);
+            parseData(event.data);
         };
 
         ws.onerror = function () {
@@ -80,22 +124,17 @@ function wsStart(addr, name) {
 
         ws.onclose = function (event) {
             console.log('WebSocket closed ', event.code);
-            showScanDialog();
-            resultDiv.innerHTML = '2FA not paired';
-            ws = null;
+            pairIcon.style.visibility = "hidden";
+            wsPoll();
         };
     }
 };
 
-function wsStop(message){
+function wsSend(message) {
     if(ws) {
-        ws.close();
-    }
-}
-
-function wsSend(message){
-    if(ws) {
-        ws.send(message);
+        if(ws.readyState == ws.OPEN) {
+            ws.send(message);
+        }
     }
 }
 
@@ -105,10 +144,10 @@ function wsFind() {
 
 function wsFindSuccess(obj) {
     var addr = 'ws://' + obj.service.addresses[0] + ':' + obj.service.port;
+    //var addr = 'ws://' + obj.service.server + ':' + obj.service.port;
     var name = obj.service.name;
     wsStart(addr, name);
-    console.log('WebSocket found at ', addr);
-    console.log(obj.service);
+    //console.log(obj.service);
 }
 
 //function mdnsAdvertise() {
@@ -117,40 +156,61 @@ function wsFindSuccess(obj) {
 
 
 // ----------------------------------------------------------------------------
-function showScanDialog() {
-    document.getElementById("scanDialog").style.visibility = "visible";
-    document.getElementById("clearButton").style.display = "inline";
-}
- 
+// General UI
+//
 
-function hideScanDialog() {
-    document.getElementById("scanDialog").style.visibility = "hidden";
-    document.getElementById("clearButton").style.display = "none";
+function showInfoDialog() {
+    hideOptionButtons();
+    pwDialog.style.display = "none";
+    clearButton.style.display = "inline";
+}
+
+
+function showPairDialog() {
+    hideOptionButtons();
+    settingsIcon.style.visibility = "hidden";
+    pairDialog.style.display = "block";
+    infoTextDiv.innerHTML = "Number of LED blinks:";
+    blinkcode = [];
+}
+
+
+function hidePairDialog() {
+    settingsIcon.style.visibility = "visible";
+    pairDialog.style.display = "none";
+    infoTextDiv.innerHTML = "";
+    blinkcode = [];
 }
 
 
 function showPasswordDialog() {
     hideOptionButtons();
-    document.getElementById("settingsIcon").style.visibility = "hidden";
-    document.getElementById("pwDialog").style.visibility = "visible";
-    //document.getElementById("pwText").focus();
+    settingsIcon.style.visibility = "hidden";
+    pwDialog.style.display = "block";
+    //pwText.focus();
 }
 
 
 function hidePasswordDialog() {
-    document.getElementById("pwDialog").style.visibility = "hidden";
-    document.getElementById("settingsIcon").style.visibility = "visible";
-    document.getElementById("pwText").value = "";
+    settingsIcon.style.visibility = "visible";
+    pwDialog.style.display = "none";
+    pwText.value = "";
 }
 
 
 function showOptionButtons() {
-    document.getElementById("optionButtons").style.display = "inline";
+    optionButtons.style.display = "inline";
 }
 
 
 function hideOptionButtons() {
-    document.getElementById("optionButtons").style.display = "none";
+    optionButtons.style.display = "none";
+}
+
+
+function showScanButton() {
+    hideOptionButtons();
+    scanButton.style.display = "inline";
 }
 
 
@@ -158,27 +218,78 @@ function displaySettings() {
     
     wsSend('Touched settings button');
     
-    if(document.getElementById("optionButtons").style.display == "inline") {
-       hideOptionButtons();
+    if(optionButtons.style.display == "inline") {
+        hideOptionButtons();
     } else {
-       showOptionButtons();
+        showOptionButtons();
+        scanButton.style.display = "none";
     }
+}
+
+
+function clearResults() 
+{
+    infoTextDiv.innerHTML = "";
+    clearButton.style.display = "none" ;
+    scanButton.style.display = "none";
 }
 
 
 // ----------------------------------------------------------------------------
-function pairPc() {
-    if(ws) {
-        wsStop();
+// ECDH pairing UI
+//
+function blinkCodeStrength() {
+    if (blinkcode.length == 0) {
+        pairStrengthDiv.innerHTML = "";
+    } else if (blinkcode.length < 4) {
+        pairStrengthDiv.innerHTML = "Low strength";
+        pairStrengthDiv.style.color = "#C00";
+    } else if (blinkcode.length < 6) {
+        pairStrengthDiv.innerHTML = "Medium strength";
+        pairStrengthDiv.style.color = "#880";
     } else {
-        wsFind();
+        pairStrengthDiv.innerHTML = "";
     }
 }
 
+function blinkPress1() { blinkPress(1); }
+function blinkPress2() { blinkPress(2); }
+function blinkPress3() { blinkPress(3); }
+function blinkPress4() { blinkPress(4); }
+function blinkPress(p) {
+    blinkcode.push(p);
+    infoTextDiv.innerHTML = '<b>' + Array(blinkcode.length + 1).join(" * ") + '</b>';
+    blinkCodeStrength();
+    console.log('button press: ' + blinkcode);
+}
+
+function blinkDel() {
+    if (blinkcode.length == 0) {
+        cancel();
+    } else {
+        blinkcode.pop();
+        if (blinkcode.length == 0) {
+            infoTextDiv.innerHTML = "Number of LED blinks:";
+        } else {
+            infoTextDiv.innerHTML = '<b>' + Array(blinkcode.length + 1).join(" * ") + '</b>';
+        }
+        console.log('button press: ' + blinkcode);
+    }
+    blinkCodeStrength();
+}
+
+function pairPc() {
+    hideOptionButtons();
+    showPairDialog();
+}
+
+
+// ----------------------------------------------------------------------------
+// Password UI
+// 
 
 function setKey() {
-    hideScanDialog();
-    resultDiv.innerHTML = "";
+    infoTextDiv.innerHTML = "";
     showPasswordDialog();
 }
 
@@ -187,24 +298,24 @@ function forgetKey() {
     key = "";
     writeKey();
     hideOptionButtons();
-    showScanDialog();
-    resultDiv.innerHTML = "Password erased";
+    showInfoDialog();
+    infoTextDiv.innerHTML = "Settings erased";
 }
 
 
 function saveKey() {
     try {
-        key = document.getElementById("pwText").value;
+        key = pwText.value;
         
         writeKey();
         
         hidePasswordDialog();
-        showScanDialog();
-        resultDiv.innerHTML = "Password set";
+        showInfoDialog();
+        infoTextDiv.innerHTML = "Password set";
     
     }
     catch(err) {
-        resultDiv.innerHTML = err.message;
+        infoTextDiv.innerHTML = err.message;
         console.log(err.message);
     }
 }
@@ -212,7 +323,8 @@ function saveKey() {
 
 function cancel() {
     hidePasswordDialog();
-    showScanDialog();
+    hidePairDialog();
+    showInfoDialog();
     clearResults();
 }
 
@@ -227,7 +339,7 @@ function openFile() {
 	    })
     }
     catch(err) {
-        resultDiv.innerHTML = err.message;
+        infoTextDiv.innerHTML = err.message;
         console.log(err.message);
     }
 }
@@ -244,7 +356,7 @@ function readKey() {
         })
     }
     catch(err) {
-        resultDiv.innerHTML = err.message;
+        infoTextDiv.innerHTML = err.message;
         console.log(err.message);
     }
 }
@@ -260,12 +372,15 @@ function writeKey() {
         })
     }
     catch(err) {
-        resultDiv.innerHTML = err.message;
+        infoTextDiv.innerHTML = err.message;
         console.log(err.message);
     }
 }
 
 
+// ----------------------------------------------------------------------------
+// Scan UI
+// 
 
 function startScan()
 {
@@ -273,8 +388,8 @@ function startScan()
     cordova.plugins.barcodeScanner.scan(
 		function (result)
         {
-            resultDiv.innerHTML = prettyprint(aes_cbc_b64_decrypt(result.text));
-            showScanDialog();
+            infoTextDiv.innerHTML = prettyprint(aes_cbc_b64_decrypt(result.text));
+            showInfoDialog();
         }, 
 		function (error) {
 			console.log("Scanning failed: " + error);
@@ -282,21 +397,17 @@ function startScan()
 	)
     }
     catch(err) {
-        resultDiv.innerHTML = err.message;
+        infoTextDiv.innerHTML = err.message;
         console.log(err.message);
     }
 
 }
 
 
-function clearResults() 
-{
-    resultDiv.innerHTML = "";
-    document.getElementById("clearButton").style.display = "none" ;
-}
-
-
 // ----------------------------------------------------------------------------
+// Parsing JSON and crypto ops
+// 
+
 function aes_cbc_b64_decrypt(ciphertext)
 {
     var res;
@@ -337,13 +448,13 @@ function aes_cbc_b64_encrypt(plaintext)
 
 function prettyprint(res)
 {
-    // if JSON string, pretty print result
+    // If JSON string, pretty print result
     var pprnt;
     var s;
     try {
         pprnt = JSON.parse(res);
            
-        // if crypto-currency 'ouputs', cleanly print result
+        // If crypto-currency 'ouputs', cleanly print result
         if (typeof pprnt.verify_output == "object") {
             var pptmp = "Sending:\n\n";
             for (var i = 0; i < pprnt.verify_output.length; i++) {
@@ -356,7 +467,8 @@ function prettyprint(res)
                 pptmp += "\nLock code:  " + pprnt.pin;
             }
             pprnt = pptmp ;
-        } else {
+        }
+        else {
             pprnt = JSON.stringify(pprnt, undefined, 4);
         }
         
@@ -373,6 +485,57 @@ function prettyprint(res)
     
     return pprnt;
 }
+
+
+function parseData(data)
+{
+    var res;
+    try {
+        res = JSON.parse(data);
+           
+        if (typeof res.ecdh == "string") {
+            if (res.ecdh == "stop") {
+                hidePairDialog();
+                infoTextDiv.innerHTML = "Successfully paired.";
+                clearButton.style.display = "inline";
+            } else {
+                showPairDialog();
+            }
+        } 
+        else {
+            //infoTextDiv.innerHTML = prettyprint(aes_cbc_b64_decrypt(data));
+            infoTextDiv.innerHTML = prettyprint(data);
+            clearButton.style.display = "inline";
+            console.log('Could not parse data.');
+        }
+    }
+    catch(err) {
+        console.log(err);
+        res = data;
+    }
+
+    return res;
+}
+
+
+
+/*
+// ECDH example 
+var alice = Crypto.createECDH('secp256k1');
+var bob = Crypto.createECDH('secp256k1');
+
+alice.generateKeys();
+bob.generateKeys();
+
+var alice_secret = alice.computeSecret(bob.getPublicKey(), null, 'hex');
+var bob_secret = bob.computeSecret(alice.getPublicKey(), null, 'hex');
+
+// alice_secret and bob_secret should be the same 
+alice_pubkey = alice.getPublicKey('hex','compressed'); // 33 bytes
+console.log(alice_pubkey);
+console.log(alice_pubkey.length);
+console.log(alice_secret == bob_secret);
+*/
 
 
 

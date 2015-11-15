@@ -67,17 +67,47 @@ pre {
     zoom: 1;
 }
 
-.scanResults {
+.infoText {
     padding: 0px 20px 0px 20px;
 }
 
-.footer {
-   position:absolute;
-   bottom:0;
-   width:100%;
-   margin: 12px auto 12px auto;
-   /*
-   */
+.options {
+    position:absolute;
+    bottom:0;
+    width:100%;
+    margin: 12px auto 12px auto;
+}
+
+.status {
+    position:absolute;
+    bottom:0;
+    right:0;
+    width:10%;
+    padding:30px 0px;
+}
+
+.buttonDel {
+    color:#444444;
+    font-size:36px;
+    position: relative;
+    top:12px;
+    padding:8px;
+    background-color:transparent;
+    border-style:none;
+}
+
+.buttonCircle {
+    color:#444444;
+    font-size:16px;
+    margin:6px;
+    padding:12px 18px;
+    background-color:#EEEEEE;
+    border-style: solid;
+    border-color: #444444; 
+    border-radius:24px;
+    -webkit-border-radius:24px;
+    appearance:none;
+    -webkit-appearance:none;
 }
 
 .buttonRound {
@@ -98,8 +128,6 @@ pre {
     font-size:14px;
     margin:10px 5px;
     padding:6px 12px;
-    
-    
     background-color:#FFFFFF;
     border-style:none;
     border-radius:12px;
@@ -121,13 +149,20 @@ pre {
     -webkit-appearance:none;
 }
 
-.hidden {
+.textInput:focus, .textInput:active,
+.buttonDel:focus, .buttonDel:active,
+.buttonCircle:focus, .buttonCircle:active {
+    outline: 0; 
+}
+
+.hiddenButton {
     /*visibility:hidden; /**/
     display:none; /**/
 }
 
-.password {
-    visibility:hidden;
+.hiddenDiv {
+    /*visibility:hidden; /**/
+    display:none; /**/
     width:100%;
 }
 
