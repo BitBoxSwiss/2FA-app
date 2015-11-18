@@ -29,24 +29,30 @@ var Crypto = require("crypto");
 var Bitcore = require("bitcore");
 var Script = Bitcore.Script;
 
-var infoTextDiv;
-var pairStrengthDiv;
-var keyFile = null;
-var key;
-var ws = null;
-var wsPollState;
-var wsPollInterval = 500; // msec
-var blinkcode = [];
+var ws = null,
+    wsPollInterval = 1000; // msec
 
 var pairIcon,
     pairDialog,
     pwDialog,
     pwText,
     clearButton,
+    pairBeginButton,
+    pairCancelButton,
     settingsIcon,
     optionButtons,
-    scanButton; 
+    scanButton, 
+    infoTextDiv,
+    pairStrengthDiv;
 
+var ecdh,
+    ecdh_secret,
+    ecdh_pubkey, 
+    blinkcode = [],
+    keyFile = null,
+    key;
+
+ecdh = Crypto.createECDH('secp256k1');
 
 const PORT = 25698;
 
@@ -59,7 +65,6 @@ document.addEventListener("deviceready", init, false);
 
 function init()
 {
-    document.querySelector("#scanButton").addEventListener("touchstart", startScan, false);
 	document.querySelector("#clearButton").addEventListener("touchstart", clearResults, false);
 	
     document.querySelector("#cancelButton").addEventListener("touchstart", cancel, false);
@@ -67,8 +72,13 @@ function init()
     document.querySelector("#submitpwButton").addEventListener("touchstart", saveKey, false);
     document.querySelector("#forgetpwButton").addEventListener("touchstart", forgetKey, false);
     document.querySelector("#settingsIcon").addEventListener("touchstart", displaySettings, false);
-    document.querySelector("#showScanButton").addEventListener("touchstart", showScanButton, false);
-    document.querySelector("#pairButton").addEventListener("touchstart", pairPc, false);
+    document.querySelector("#pairOptionButton").addEventListener("touchstart", pairEnter, false);
+    document.querySelector("#pairBeginButton").addEventListener("touchstart", pairPc, false);
+    document.querySelector("#pairCancelButton").addEventListener("touchstart", cancel, false);
+    document.querySelector("#showScanButton").addEventListener("touchstart", startScan, false);
+    //document.querySelector("#showScanButton").addEventListener("touchstart", showScanButton, false);
+    //document.querySelector("#scanButton").addEventListener("touchstart", startScan, false);
+    
     
     document.querySelector("#blinkDelButton").addEventListener("touchstart", blinkDel, false);
     document.querySelector("#blink1Button").addEventListener("touchstart", blinkPress1, false);
@@ -83,12 +93,14 @@ function init()
     pairDialog = document.getElementById("pairDialog");
 	infoTextDiv = document.querySelector("#infoText");
     clearButton = document.getElementById("clearButton");
+    pairBeginButton = document.getElementById("pairBeginButton");
+    pairCancelButton = document.getElementById("pairCancelButton");
     settingsIcon = document.getElementById("settingsIcon");
     optionButtons = document.getElementById("optionButtons");
     scanButton = document.getElementById("scanButton");
 
     openFile();
-    wsPoll();
+    setInterval(wsFind, wsPollInterval);
 }
 
 
@@ -96,26 +108,23 @@ function init()
 // Websockets
 //
 
-function wsPoll() {
-    wsPollState = setInterval(wsFind, wsPollInterval);
-}
-
 function wsStart(addr, name) {
+    
     if(!ws || ws.readyState == ws.CLOSED) {
         console.log('WebSocket found at ', addr);
         
         ws = new WebSocket(addr);
     
         ws.onopen = function () {
-            console.log('WebSocket openned');
-            wsSend('Hello dbb app!');
-            clearInterval(wsPollState);
             pairIcon.style.visibility = "visible";
+            console.log('WebSocket openned');
+            wsSend('{"tfa": "Hello dbb app!"}');
         };
 
         ws.onmessage = function (event) {
             console.log('WebSocket received: ', event.data);
-            parseData(event.data);
+            infoTextDiv.innerHTML = parseData(event.data);
+            showInfoDialog();
         };
 
         ws.onerror = function () {
@@ -125,7 +134,6 @@ function wsStart(addr, name) {
         ws.onclose = function (event) {
             console.log('WebSocket closed ', event.code);
             pairIcon.style.visibility = "hidden";
-            wsPoll();
         };
     }
 };
@@ -139,15 +147,14 @@ function wsSend(message) {
 }
 
 function wsFind() {
-    ZeroConf.watch("_dbb._tcp.local.", wsFindSuccess);
+    ZeroConf.watch("_dbb._tcp.local.", wsFound);
 }
 
-function wsFindSuccess(obj) {
+function wsFound(obj) {
     var addr = 'ws://' + obj.service.addresses[0] + ':' + obj.service.port;
     //var addr = 'ws://' + obj.service.server + ':' + obj.service.port;
     var name = obj.service.name;
     wsStart(addr, name);
-    //console.log(obj.service);
 }
 
 //function mdnsAdvertise() {
@@ -161,14 +168,13 @@ function wsFindSuccess(obj) {
 
 function showInfoDialog() {
     hideOptionButtons();
+    hidePairDialog();
     pwDialog.style.display = "none";
     clearButton.style.display = "inline";
 }
 
 
 function showPairDialog() {
-    hideOptionButtons();
-    settingsIcon.style.visibility = "hidden";
     pairDialog.style.display = "block";
     infoTextDiv.innerHTML = "Number of LED blinks:";
     blinkcode = [];
@@ -177,8 +183,10 @@ function showPairDialog() {
 
 function hidePairDialog() {
     settingsIcon.style.visibility = "visible";
+    pairBeginButton.style.display = "none";
+    pairCancelButton.style.display = "none";
     pairDialog.style.display = "none";
-    infoTextDiv.innerHTML = "";
+    pairStrengthDiv.innerHTML = "";
     blinkcode = [];
 }
 
@@ -238,6 +246,7 @@ function clearResults()
 // ----------------------------------------------------------------------------
 // ECDH pairing UI
 //
+
 function blinkCodeStrength() {
     if (blinkcode.length == 0) {
         pairStrengthDiv.innerHTML = "";
@@ -252,6 +261,7 @@ function blinkCodeStrength() {
     }
 }
 
+
 function blinkPress1() { blinkPress(1); }
 function blinkPress2() { blinkPress(2); }
 function blinkPress3() { blinkPress(3); }
@@ -262,6 +272,7 @@ function blinkPress(p) {
     blinkCodeStrength();
     console.log('button press: ' + blinkcode);
 }
+
 
 function blinkDel() {
     if (blinkcode.length == 0) {
@@ -278,9 +289,35 @@ function blinkDel() {
     blinkCodeStrength();
 }
 
+
+function pairEnter() {
+    if(ws) {
+        if(ws.readyState == ws.OPEN) {
+            hideOptionButtons();
+            clearButton.style.display = "none" ;
+            settingsIcon.style.visibility = "hidden";
+            pairBeginButton.style.display = "inline";
+            pairCancelButton.style.display = "inline";
+            infoTextDiv.innerHTML = 'Your Digital Bitbox will begin to blink.<br>Count the number of blinks in each set.<br>Then enter the number here.<br>Breifly tap the touch button on the Digital Bitbox to end.';
+            return; 
+        }
+    }
+    infoTextDiv.innerHTML = 'Open your Digital Bitbox PC app before pairing.';
+    showInfoDialog();
+}
+
 function pairPc() {
-    hideOptionButtons();
-    showPairDialog();
+    pairBeginButton.style.display = "none";
+    pairCancelButton.style.display = "none";
+    if(ws) {
+        if(ws.readyState == ws.OPEN) {
+            ecdhPubkey();
+            showPairDialog();
+            return; 
+        }
+    }
+    infoTextDiv.innerHTML = 'Open your Digital Bitbox PC app before pairing.';
+    showInfoDialog();
 }
 
 
@@ -354,10 +391,12 @@ function readKey() {
             }
             reader.readAsText(file);
         })
+        return key; 
     }
     catch(err) {
         infoTextDiv.innerHTML = err.message;
         console.log(err.message);
+        return null;
     }
 }
 
@@ -388,7 +427,7 @@ function startScan()
     cordova.plugins.barcodeScanner.scan(
 		function (result)
         {
-            infoTextDiv.innerHTML = prettyprint(aes_cbc_b64_decrypt(result.text));
+            infoTextDiv.innerHTML = parseData(aes_cbc_b64_decrypt(result.text));
             showInfoDialog();
         }, 
 		function (error) {
@@ -415,6 +454,9 @@ function aes_cbc_b64_decrypt(ciphertext)
         var ub64 = new Buffer(ciphertext, "base64").toString("binary");
         var iv   = new Buffer(ub64.slice(0, 16), "binary");
         var enc  = new Buffer(ub64.slice(16), "binary");
+        
+        console.log('aes dbg key: ', key);
+        
         var k    = new Buffer(key, "hex");
         var decipher = Crypto.createDecipheriv("aes-256-cbc", k, iv);
         var dec = decipher.update(enc) + decipher.final();
@@ -446,97 +488,96 @@ function aes_cbc_b64_encrypt(plaintext)
 }
 
 
-function prettyprint(res)
-{
-    // If JSON string, pretty print result
-    var pprnt;
-    var s;
-    try {
-        pprnt = JSON.parse(res);
-           
-        // If crypto-currency 'ouputs', cleanly print result
-        if (typeof pprnt.verify_output == "object") {
-            var pptmp = "Sending:\n\n";
-            for (var i = 0; i < pprnt.verify_output.length; i++) {
-                s = new Buffer(pprnt.verify_output[i].script, "hex");
-                s = new Script(s);
-                s = s.toAddress("livenet").toString();
-                pptmp += pprnt.verify_output[i].value / 100000000 + " BTC\n" + s + "\n\n";
-            }
-            if (typeof pprnt.pin == "string") {
-                pptmp += "\nLock code:  " + pprnt.pin;
-            }
-            pprnt = pptmp ;
-        }
-        else {
-            pprnt = JSON.stringify(pprnt, undefined, 4);
-        }
-        
-        pprnt = "<pre>" + pprnt + "</pre>";
-    }
-    catch(err) {
-        console.log(err);
-        pprnt = res;
-    }
-
-    if (pprnt == "") {
-        pprnt = "--";
-    }
-    
-    return pprnt;
-}
+function ecdhPubkey() {
+    ecdh.generateKeys();
+    var ecdh_pubkey = ecdh.getPublicKey('hex','compressed'); // 33 bytes
+    var msg = '{"ecdh":"' + ecdh_pubkey + '"}';
+    wsSend(msg);   
+}    
 
 
 function parseData(data)
 {
-    var res;
+    var parse;
+    
     try {
-        res = JSON.parse(data);
-           
-        if (typeof res.ecdh == "string") {
-            if (res.ecdh == "stop") {
-                hidePairDialog();
-                infoTextDiv.innerHTML = "Successfully paired.";
-                clearButton.style.display = "inline";
-            } else {
-                showPairDialog();
+        parse = JSON.parse(data);
+                
+        if (typeof parse.verify_output == "object") {
+            // QR scan
+            // If crypto-currency 'ouputs', cleanly print result
+            var pptmp = "Sending:\n\n";
+            for (var i = 0; i < parse.verify_output.length; i++) {
+                var s;
+                s = new Buffer(parse.verify_output[i].script, "hex");
+                s = new Script(s);
+                s = s.toAddress("livenet").toString();
+                pptmp += parse.verify_output[i].value / 100000000 + " BTC\n" + s + "\n\n";
             }
+            if (typeof parse.pin == "string") {
+                pptmp += "\nLock code:  " + parse.pin;
+            }
+            parse = "<pre>" + pptmp + "</pre>";
+        }
+        else if (typeof parse.verifypass == "object") {
+            // 2FA - PC pairing
+            var ciphertext = parse.verifypass.ciphertext;
+            var pubkey = parse.verifypass.ecdh;
+            ecdh_secret = ecdh.computeSecret(pubkey, 'hex', 'hex');
+            
+            key = Crypto.createHash('sha256').update(new Buffer(ecdh_secret, 'hex')).digest('hex');
+            key = Crypto.createHash('sha256').update(new Buffer(key, 'hex')).digest('hex');
+            var k = new Buffer(key, "hex");
+            for (var i = 0; i < blinkcode.length; i++) {
+                k[i % 32] ^= blinkcode[i]; 
+            }
+            key = k.toString('hex');
+            key = Crypto.createHash('sha256').update(new Buffer(key, 'ascii')).digest('hex');
+            key = Crypto.createHash('sha256').update(new Buffer(key, 'hex')).digest('hex');
+
+            writeKey();
+            var message = aes_cbc_b64_decrypt(ciphertext);
+            console.log(blinkcode);
+            console.log('ecdh check message: ', message);
+            
+            if (message === 'Digital Bitbox 2FA')
+                parse = "Successfully paired.";
+            else 
+                parse = "Pairing failed!";
         } 
+        else if (typeof parse.echo == "string") {
+            // Echo verification
+            console.log('Echo');
+            var ciphertext = parse.echo;
+            parse = aes_cbc_b64_decrypt(ciphertext);
+       
+            if (parse === ciphertext) {
+                parse = 'Could not parse:<br><br>' + JSON.stringify(parse, undefined, 4);
+            }
+            //if (parse.slice(0,4).localeCompare('xpub') == 0) {
+                //var xpub = new Bitcore.HDPublicKey(parse); 
+                //var addr = new Bitcore.Address(xpub.publicKey, "livenet"); // get ripemd not supported err after broswerify'ing
+                //parse = addr.toString();
+            //}
+        
+        }
         else {
-            //infoTextDiv.innerHTML = prettyprint(aes_cbc_b64_decrypt(data));
-            infoTextDiv.innerHTML = prettyprint(data);
-            clearButton.style.display = "inline";
+            parse = 'Could not parse:<br><br>' + JSON.stringify(parse, undefined, 4);
             console.log('Could not parse data.');
         }
+    
     }
     catch(err) {
         console.log(err);
-        res = data;
+        parse = data;
     }
 
-    return res;
+    if (parse == "") {
+        parse = "--";
+    }
+
+    return parse;
 }
 
-
-
-/*
-// ECDH example 
-var alice = Crypto.createECDH('secp256k1');
-var bob = Crypto.createECDH('secp256k1');
-
-alice.generateKeys();
-bob.generateKeys();
-
-var alice_secret = alice.computeSecret(bob.getPublicKey(), null, 'hex');
-var bob_secret = bob.computeSecret(alice.getPublicKey(), null, 'hex');
-
-// alice_secret and bob_secret should be the same 
-alice_pubkey = alice.getPublicKey('hex','compressed'); // 33 bytes
-console.log(alice_pubkey);
-console.log(alice_pubkey.length);
-console.log(alice_secret == bob_secret);
-*/
-
-
-
+   
 
