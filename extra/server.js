@@ -59,7 +59,6 @@ wss.on('connection', function(ws) {
     });
     
     setTimeout(function() { runCode(); }, 1000);
-
 });
 
 wss.broadcast = function broadcast(data) {
@@ -99,25 +98,35 @@ var wssBroadcast = function () {
 // 
 
 
-// Signature verification
+// Echo verification
 //var cmd = './tests_cmdline_live \'{"led":"toggle"}\'';
+var cmdXpub = './tests_cmdline_live \'{"xpub":"m/0/0"}\'';
 var cmdSign = './tests_cmdline_live \'{"sign": {"meta":"_meta_data_", "data":[{"hash":"c12d791451bb41fd4b5145bcef25f794ca33c0cf4fe9d24f956086c5aa858a9d", "keypath":"m/44p/0p/0p/1/8"},{"hash":"3dfc3b1ed349e9b361b31c706fbf055ebf46ae725740f6739e2dfa87d2a98790", "keypath":"m/44p/0p/0p/0/5"}]}}\'';
 
 
 function sysExecSign(cmd) {
     var reply = Exec(cmd).toString();
-    console.log(reply);
-    wssSend(reply); 
+    reply = JSON.parse(reply);
+    console.log('reply: ', JSON.stringify(reply));
+    if (wssSend(JSON.stringify(reply))) { return; }
     
     reply = Exec(cmd).toString();
+    reply = JSON.parse(reply);
     console.log(reply);
-    process.exit();
 };
 
+
+function sysExecXpub(cmd) {
+    var reply = Exec(cmd).toString();
+    reply = JSON.parse(reply);
+    console.log('reply: ', JSON.stringify(reply));
+    if (wssSend(JSON.stringify(reply))) { return; }
+};
 
 
 function runCode() 
 {
+    sysExecXpub(cmdXpub);
     //sysExecSign(cmdSign);
 }
 
