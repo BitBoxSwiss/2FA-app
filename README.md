@@ -26,14 +26,15 @@ Requires:
 Command line build and install:
 
 ```
-git clone --recursive https://github.com/digitalbitbox/QR_app.git
-cordova create digitalbitboxQR com.digitalbitbox.qr "DigitalBitboxQR" --copy-from=./QR_app/
-cd digitalbitboxQR
+git clone https://github.com/digitalbitbox/QR_app.git
+cordova create digitalbitbox2FA com.digitalbitbox.qr "DigitalBitboxQR" --copy-from=./QR_app/
+cd digitalbitbox2FA
 cordova platform add android 
 cordova plugin add https://github.com/wildabeast/BarcodeScanner
 cordova plugin add cordova-plugin-file
 cordova plugin add cordova-zeroconf-plugin  #  mDNS (currently Android only)
 cordova plugin add cordova-plugin-crosswalk-webview  #  supports websockets
+cordova plugin add cordova-plugin-network-information
 npm install bitcore
 browserify www/js/main.js -o www/js/app.js
 cordova build android
