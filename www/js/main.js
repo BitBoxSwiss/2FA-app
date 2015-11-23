@@ -54,7 +54,6 @@ var ecdh,
 
 ecdh = Crypto.createECDH('secp256k1');
 
-const PORT = 25698;
 
 
 // ----------------------------------------------------------------------------
@@ -105,11 +104,31 @@ function init()
 
 
 // ----------------------------------------------------------------------------
+// Network status
+//
+
+function checkConnection() {
+    var networkState = navigator.connection.type;
+
+    var states = {};
+    states[Connection.UNKNOWN]  = 'Unknown connection';
+    states[Connection.ETHERNET] = 'Ethernet connection';
+    states[Connection.WIFI]     = 'WiFi connection';
+    states[Connection.CELL_2G]  = 'Cell 2G connection';
+    states[Connection.CELL_3G]  = 'Cell 3G connection';
+    states[Connection.CELL_4G]  = 'Cell 4G connection';
+    states[Connection.CELL]     = 'Cell generic connection';
+    states[Connection.NONE]     = 'No network connection';
+
+    console.log('Connection type: ' + states[networkState]);
+}
+
+
+// ----------------------------------------------------------------------------
 // Websockets
 //
 
 function wsStart(addr, name) {
-    
     if(!ws || ws.readyState == ws.CLOSED) {
         console.log('WebSocket found at ', addr);
         
@@ -147,7 +166,9 @@ function wsSend(message) {
 }
 
 function wsFind() {
-    ZeroConf.watch("_dbb._tcp.local.", wsFound);
+    if (navigator.connection.type === Connection.WIFI) {
+        ZeroConf.watch("_dbb._tcp.local.", wsFound); // does not reconnect if turn off/on wifi
+    }
 }
 
 function wsFound(obj) {
@@ -158,6 +179,7 @@ function wsFound(obj) {
 }
 
 //function mdnsAdvertise() {
+    //const PORT = 25698;
     //ZeroConf.register("_http._tcp.local.", "DBBapp", PORT, "name=DBBapp_text");
 //}
 
@@ -298,11 +320,16 @@ function pairEnter() {
             settingsIcon.style.visibility = "hidden";
             pairBeginButton.style.display = "inline";
             pairCancelButton.style.display = "inline";
-            infoTextDiv.innerHTML = 'Your Digital Bitbox will begin to blink.<br>Count the number of blinks in each set.<br>Then enter the number here.<br>Breifly tap the touch button on the Digital Bitbox to end.';
+            infoTextDiv.innerHTML = 'Your Digital Bitbox will begin to blink.<br><br><pre>- Count the number of blinks in each set.\n- Enter those numbers here.\n- Tap the touch button on the Digital Bitbox to end.</pre>';
             return; 
         }
     }
-    infoTextDiv.innerHTML = 'Open your Digital Bitbox PC app before pairing.';
+    
+    if (navigator.connection.type != Connection.WIFI) {
+        infoTextDiv.innerHTML = 'A WiFi connection is needed for pairing.';
+    } else {
+        infoTextDiv.innerHTML = 'Open your Digital Bitbox PC app before pairing.';
+    }
     showInfoDialog();
 }
 
@@ -454,9 +481,6 @@ function aes_cbc_b64_decrypt(ciphertext)
         var ub64 = new Buffer(ciphertext, "base64").toString("binary");
         var iv   = new Buffer(ub64.slice(0, 16), "binary");
         var enc  = new Buffer(ub64.slice(16), "binary");
-        
-        console.log('aes dbg key: ', key);
-        
         var k    = new Buffer(key, "hex");
         var decipher = Crypto.createDecipheriv("aes-256-cbc", k, iv);
         var dec = decipher.update(enc) + decipher.final();
