@@ -272,12 +272,15 @@ function clearResults()
 function blinkCodeStrength() {
     if (blinkcode.length == 0) {
         pairStrengthDiv.innerHTML = "";
-    } else if (blinkcode.length < 4) {
+    } else if (blinkcode.length < 3) {
         pairStrengthDiv.innerHTML = "Low strength";
         pairStrengthDiv.style.color = "#C00";
-    } else if (blinkcode.length < 6) {
+    } else if (blinkcode.length < 5) {
         pairStrengthDiv.innerHTML = "Medium strength";
         pairStrengthDiv.style.color = "#880";
+    } else if (blinkcode.length > 6) {
+        pairStrengthDiv.innerHTML = 'When ready to end:<br>Tap the touch button on the Digital Bitbox.</pre>';
+        pairStrengthDiv.style.color = "#000";
     } else {
         pairStrengthDiv.innerHTML = "";
     }
