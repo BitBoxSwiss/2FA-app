@@ -60,6 +60,13 @@
         <button id="pairCancelButton" class="buttonRound hiddenButton">Cancel</button>
 
 
+        <div id="ipDialog" class="hiddenDiv">
+            <input type="text" id="ipText" class="textInput" value="">
+            <br>
+            <button id="submitIpButton" class="buttonRound">Submit</button>
+            <button id="cancelIpButton" class="buttonRound">Cancel</button>
+        </div>
+        
         <div id="pwDialog" class="hiddenDiv">
             <input type="text" id="pwText" class="textInput" value="">
             <br>
@@ -85,11 +92,17 @@
         </div>
        
 
+        <div class="options">
+            <button id="pairManualButton" class="buttonSimple hiddenButton">Connect manually</button>
+            <br><br>
+            <br><br>
+            <br><br>
+        </div>
         <div id="optionsDialog" class="options">
             <div id="optionButtons" class="hiddenButton">
                 <button id="pairOptionButton" class="buttonSimple">Pair with PC</button>
                 <button id="showScanButton" class="buttonSimple">Scan QR code</button>
-                <button id="changepwButton" class="buttonSimple">Enter password</button>
+                <!--button id="changepwButton" class="buttonSimple">Enter password</button-->
                 <button id="forgetpwButton" class="buttonSimple">Forget all</button>
                 <br>
             </div>

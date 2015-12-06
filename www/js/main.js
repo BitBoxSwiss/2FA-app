@@ -29,16 +29,24 @@ var Crypto = require("crypto");
 var Bitcore = require("bitcore");
 var Script = Bitcore.Script;
 
+const PORT=25698;
+
 var ws = null,
+    wsIp = null,
+    wsAddr = '',
+    wsName = '',
     wsPollInterval = 1000; // msec
 
 var pairIcon,
     pairDialog,
     pwDialog,
+    ipDialog,
     pwText,
+    ipText,
     clearButton,
     pairBeginButton,
     pairCancelButton,
+    pairManualButton,
     settingsIcon,
     optionButtons,
     scanButton, 
@@ -64,16 +72,19 @@ document.addEventListener("deviceready", init, false);
 
 function init()
 {
-	document.querySelector("#clearButton").addEventListener("touchstart", clearResults, false);
-	
-    document.querySelector("#cancelButton").addEventListener("touchstart", cancel, false);
-    document.querySelector("#changepwButton").addEventListener("touchstart", setKey, false);
+	document.querySelector("#clearButton").addEventListener("touchstart", cancelClear, false);
+    document.querySelector("#cancelButton").addEventListener("touchstart", cancelClear, false);
+    document.querySelector("#cancelIpButton").addEventListener("touchstart", cancelClear, false);
+    //document.querySelector("#changepwButton").addEventListener("touchstart", setKey, false);
     document.querySelector("#submitpwButton").addEventListener("touchstart", saveKey, false);
-    document.querySelector("#forgetpwButton").addEventListener("touchstart", forgetKey, false);
+    document.querySelector("#submitIpButton").addEventListener("touchstart", setIP, false);
+    document.querySelector("#forgetpwButton").addEventListener("touchstart", forget, false);
     document.querySelector("#settingsIcon").addEventListener("touchstart", displaySettings, false);
     document.querySelector("#pairOptionButton").addEventListener("touchstart", pairEnter, false);
     document.querySelector("#pairBeginButton").addEventListener("touchstart", pairPc, false);
-    document.querySelector("#pairCancelButton").addEventListener("touchstart", cancel, false);
+    document.querySelector("#pairCancelButton").addEventListener("touchstart", cancelClear, false);
+    document.querySelector("#pairManualButton").addEventListener("touchstart", pairManual, false);
+    document.querySelector("#pairIcon").addEventListener("touchstart", pairStatus, false);
     document.querySelector("#showScanButton").addEventListener("touchstart", startScan, false);
     //document.querySelector("#showScanButton").addEventListener("touchstart", showScanButton, false);
     //document.querySelector("#scanButton").addEventListener("touchstart", startScan, false);
@@ -86,7 +97,9 @@ function init()
     document.querySelector("#blink4Button").addEventListener("touchstart", blinkPress4, false);
     
     pwText = document.getElementById("pwText");
+    ipText = document.getElementById("ipText");
     pwDialog = document.getElementById("pwDialog");
+    ipDialog = document.getElementById("ipDialog");
 	pairStrengthDiv = document.querySelector("#pairStrength");
     pairIcon = document.getElementById("pairIcon");
     pairDialog = document.getElementById("pairDialog");
@@ -94,6 +107,7 @@ function init()
     clearButton = document.getElementById("clearButton");
     pairBeginButton = document.getElementById("pairBeginButton");
     pairCancelButton = document.getElementById("pairCancelButton");
+    pairManualButton = document.getElementById("pairManualButton");
     settingsIcon = document.getElementById("settingsIcon");
     optionButtons = document.getElementById("optionButtons");
     scanButton = document.getElementById("scanButton");
@@ -128,11 +142,11 @@ function checkConnection() {
 // Websockets
 //
 
-function wsStart(addr, name) {
+function wsStart() {
     if(!ws || ws.readyState == ws.CLOSED) {
-        console.log('WebSocket found at ', addr);
+        console.log('WebSocket found at ', wsAddr);
         
-        ws = new WebSocket(addr);
+        ws = new WebSocket(wsAddr);
     
         ws.onopen = function () {
             pairIcon.style.visibility = "visible";
@@ -153,6 +167,8 @@ function wsStart(addr, name) {
         ws.onclose = function (event) {
             console.log('WebSocket closed ', event.code);
             pairIcon.style.visibility = "hidden";
+            wsAddr = '';
+            wsName = '';
         };
     }
 };
@@ -165,17 +181,25 @@ function wsSend(message) {
     }
 }
 
+
+
 function wsFind() {
-    if (navigator.connection.type === Connection.WIFI) {
+    if (wsIp) {
+        wsAddr = 'ws://' + wsIp + ':' + PORT;
+        wsName = 'Manually entered';
+        wsStart();
+    } else if (navigator.connection.type === Connection.WIFI) {
         ZeroConf.watch("_dbb._tcp.local.", wsFound); // does not reconnect if turn off/on wifi
+    } else {
+        checkConnection();
     }
 }
 
 function wsFound(obj) {
-    var addr = 'ws://' + obj.service.addresses[0] + ':' + obj.service.port;
-    //var addr = 'ws://' + obj.service.server + ':' + obj.service.port;
-    var name = obj.service.name;
-    wsStart(addr, name);
+    wsAddr = 'ws://' + obj.service.addresses[0] + ':' + obj.service.port;
+    //wsAddr = 'ws://' + obj.service.server + ':' + obj.service.port;
+    wsName = obj.service.name;
+    wsStart();
 }
 
 //function mdnsAdvertise() {
@@ -192,6 +216,7 @@ function showInfoDialog() {
     hideOptionButtons();
     hidePairDialog();
     pwDialog.style.display = "none";
+    ipDialog.style.display = "none";
     clearButton.style.display = "inline";
 }
 
@@ -210,6 +235,32 @@ function hidePairDialog() {
     pairDialog.style.display = "none";
     pairStrengthDiv.innerHTML = "";
     blinkcode = [];
+}
+
+
+function showNoWSDialog() {
+    infoTextDiv.innerHTML = 'Cannot find the Digital Bitbox PC app.';
+    pairManualButton.style.display = "inline";
+    clearButton.style.display = "inline";
+    settingsIcon.style.visibility = "hidden";
+    hideOptionButtons();
+}
+
+
+function showIpDialog() {
+    cancelClear();
+    infoTextDiv.innerHTML = "Enter the IP address of your PC";
+    hideOptionButtons();
+    settingsIcon.style.visibility = "hidden";
+    ipDialog.style.display = "block";
+}
+
+
+function hideIpDialog() {
+    pairManualButton.style.display = "none";
+    settingsIcon.style.visibility = "visible";
+    ipDialog.style.display = "none";
+    ipText.value = "";
 }
 
 
@@ -257,14 +308,6 @@ function displaySettings() {
 }
 
 
-function clearResults() 
-{
-    infoTextDiv.innerHTML = "";
-    clearButton.style.display = "none" ;
-    scanButton.style.display = "none";
-}
-
-
 // ----------------------------------------------------------------------------
 // ECDH pairing UI
 //
@@ -301,7 +344,7 @@ function blinkPress(p) {
 
 function blinkDel() {
     if (blinkcode.length == 0) {
-        cancel();
+        cancelClear();
     } else {
         blinkcode.pop();
         if (blinkcode.length == 0) {
@@ -330,10 +373,10 @@ function pairEnter() {
     
     if (navigator.connection.type != Connection.WIFI) {
         infoTextDiv.innerHTML = 'A WiFi connection is needed for pairing.';
+        showInfoDialog(); 
     } else {
-        infoTextDiv.innerHTML = 'Open your Digital Bitbox PC app before pairing.';
+        showNoWSDialog();
     }
-    showInfoDialog();
 }
 
 function pairPc() {
@@ -346,8 +389,25 @@ function pairPc() {
             return; 
         }
     }
-    infoTextDiv.innerHTML = 'Open your Digital Bitbox PC app before pairing.';
-    showInfoDialog();
+    showNoWSDialog();
+}
+
+function pairManual() {
+    showIpDialog();
+}
+
+function setIP() {
+    wsIp = ipText.value;
+    cancelClear();   
+}
+
+function pairStatus() {
+    if(clearButton.style.display == "inline"){
+        cancelClear();
+    } else {
+        infoTextDiv.innerHTML = 'Digital Bitbox PC app connect at:<br>' + wsAddr + '<br>' + wsName;
+        showInfoDialog(); 
+    }
 }
 
 
@@ -361,7 +421,8 @@ function setKey() {
 }
 
 
-function forgetKey() {
+function forget() {
+    wsIp = null;
     key = "";
     writeKey();
     hideOptionButtons();
@@ -388,11 +449,14 @@ function saveKey() {
 }
            
 
-function cancel() {
+function cancelClear() {
     hidePasswordDialog();
     hidePairDialog();
+    hideIpDialog();
     showInfoDialog();
-    clearResults();
+    infoTextDiv.innerHTML = "";
+    clearButton.style.display = "none";
+    scanButton.style.display = "none";
 }
 
 
