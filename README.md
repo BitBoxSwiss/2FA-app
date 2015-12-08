@@ -1,12 +1,7 @@
 ## Digital Bitbox | Two factor authentication app
 
-![alt tag](img/ios/screen_start.png)
 
-This smartphone app is a general purpose barcode scanner with a minimalist interface. It uses the wildabeast BarcodeScanner plugin. 
-
-For the Digital Bitbox, it is also used to verify QR codes before signing a transaction. This avoids handcrafted man-in-the-middle attacks on compromised computers by verifying that you are signing the correct transaction. 
-
-Just click the button to scan. Plain text is printed as is. JSON-formatted text is pretty-printed. AES-256-CBC encrypted text is decrypted with a user-supplied password, which is set after clicking on the options icon at the bottom of the screen.
+This mobile app works with the [Digital Bitbox](https://digitalbitbox.com) hardware wallet to provide the highest level of security.
 
 
 ## Installation
@@ -35,7 +30,7 @@ cordova plugin add cordova-plugin-file
 cordova plugin add cordova-zeroconf-plugin  #  mDNS (currently Android only)
 cordova plugin add cordova-plugin-crosswalk-webview  #  supports websockets
 cordova plugin add cordova-plugin-network-information
-npm install bitcore
+npm install bitcore ripemd160 bs58check
 browserify www/js/main.js -o www/js/app.js
 cordova build android
 ```
@@ -43,29 +38,6 @@ cordova build android
 To install on an Android phone, connect it to your computer and type  `cordova run android`. [Developer permissions](https://developer.android.com/tools/device.html) are required. 
 
 To install on an iPhone, replace `android` with `ios` and open the file `platforms/ios/Digital Bitbox QR.xcodeproj` in Xcode. An iOS Developer Program membership, or a jailbroke phone, is required.
-
-## Using the app
-
-Scan a plaintext QR code:
-
-![alt tag](img/website_logo_qrcode_small.png)
-
-![alt tag](img/ios/screen_scan_url.png)
-
-
-Scan an AES-encrypted Digital Bitbox verification QR code:
-
-![alt tag](img/echo_qrcode.png)
-
-![alt tag](img/ios/screen_scan_sign_lock.png)
-
-
-Set the password for decrypting the Digital Bitbox verification QR code:
-
-![alt tag](img/ios/screen_options.png)
-![alt tag](img/ios/screen_pwdialog_keyboard.png)
-
-
 
 
 
