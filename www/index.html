@@ -4,7 +4,7 @@
  
  The MIT License (MIT)
 
- Copyright (c) 2015 Douglas J. Bakkum
+ Copyright (c) 2015 Douglas J. Bakkum, Shift Devices AG
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the "Software"),
@@ -26,6 +26,7 @@
 
 */ -->
 
+
 <html>
     <head>
         <meta charset="utf-8" />
@@ -33,8 +34,7 @@
         <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
         <link rel="stylesheet" type="text/css" href="css/index.css" />
         <link rel="stylesheet" type="text/css" href="css/digiboxfont.css" />
-        <link href='http://fonts.googleapis.com/css?family=Montserrat:400,700' rel='stylesheet' type='text/css'>
-        <title>Digital Bitbox QR</title>
+        <title>Digital Bitbox 2FA</title>
         
         <script type="text/javascript" src="cordova.js" async></script>
         <script type="text/javascript" src="js/app.js" async></script>
@@ -46,35 +46,73 @@
 
         <br><br><br><br><db>#</db><br><br><dbs>digital&nbsp;bitbox</dbs><br><br>
        
-        <div id="scanDialog">
-            <button id="scanButton" class="buttonRound blink">Scan</button>
+        <button id="scanButton" class="buttonRound blink hiddenButton">Scan</button>
+        <br>
+        <br>
+        
+
+        <div id="infoText" class="infoText"></div>
+        <br>
+        
+
+        <button id="clearButton" class="buttonRound hiddenButton">Clear</button>
+        <button id="pairBeginButton" class="buttonRound hiddenButton">Begin!</button>
+        <button id="pairCancelButton" class="buttonRound hiddenButton">Cancel</button>
+
+
+        <div id="ipDialog" class="hiddenDiv">
+            <input type="text" id="ipText" class="textInput" value="">
             <br>
-            <br>
-            <div id="scanResults" class="scanResults"></div>
-            <br>
-            <button id="clearButton" class="buttonRound hidden">Clear</button>
+            <button id="submitIpButton" class="buttonRound">Submit</button>
+            <button id="cancelIpButton" class="buttonRound">Cancel</button>
         </div>
         
-        <div id="pwDialog" class="password">
+        <div id="pwDialog" class="hiddenDiv">
             <input type="text" id="pwText" class="textInput" value="">
             <br>
             <button id="submitpwButton" class="buttonRound">Submit</button>
-            <button id="cancelpwButton" class="buttonRound">Cancel</button>
-            <br>
-            <br>
+            <button id="cancelButton" class="buttonRound">Cancel</button>
         </div>
         
-        <div id="footer" class="footer">
-            <div id="optionButtons" class="hidden">
-                <button id="changepwButton" class="buttonSimple">&nbsp;Set password&nbsp;</button>
-                <button id="forgetpwButton" class="buttonSimple">Forget password</button>
+        
+        <div id="pairDialog" class="hiddenDiv">
+            <button id="blinkDelButton" class="buttonDel">
+                <img src="img/erase_to_the_left_444.png" alt="Del" height="36px" width="36px">
+            </button>
+            <button id="blink1Button" class="buttonCircle">1</button>
+            <button id="blink2Button" class="buttonCircle">2</button>
+            <button id="blink3Button" class="buttonCircle">3</button>
+            <button id="blink4Button" class="buttonCircle">4</button>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <br>
+            <br>
+            <div id="pairStrength" class="infoText"></div>
+        </div>
+       
+
+        <div class="options">
+            <button id="pairManualButton" class="buttonSimple hiddenButton">Connect manually</button>
+            <br><br>
+            <br><br>
+            <br><br>
+        </div>
+        <div id="optionsDialog" class="options">
+            <div id="optionButtons" class="hiddenButton">
+                <button id="pairOptionButton" class="buttonSimple">Pair with PC</button>
+                <button id="showScanButton" class="buttonSimple">Scan QR code</button>
+                <!--button id="changepwButton" class="buttonSimple">Enter password</button-->
+                <button id="forgetpwButton" class="buttonSimple">Forget all</button>
                 <br>
             </div>
             <img id="settingsIcon" src="img/settings.png" alt="Options" style="width:40px; height:auto">
         </div>
-   
-
+            
         
+        <div id="statusDiv" class="status">
+            <img id="pairIcon" src="img/link_444.png" alt="Paired" style="width:20px; height:auto; visibility:hidden">
+        </div>
     
     </body>
 </html>
