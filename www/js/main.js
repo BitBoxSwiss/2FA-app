@@ -28,8 +28,11 @@
 var Crypto = require("crypto");
 var Bitcore = require("bitcore");
 var Script = Bitcore.Script;
+var Ripemd160 = require('ripemd160');
+var Base58Check = require('bs58check')
 
 const PORT=25698;
+const COINNET='TESTNET'; // TESTNET or MAINNET
 
 var ws = null,
     wsIp = null,
@@ -338,7 +341,6 @@ function blinkPress(p) {
     blinkcode.push(p);
     infoTextDiv.innerHTML = '<b>' + Array(blinkcode.length + 1).join(" * ") + '</b>';
     blinkCodeStrength();
-    console.log('button press: ' + blinkcode);
 }
 
 
@@ -352,7 +354,6 @@ function blinkDel() {
         } else {
             infoTextDiv.innerHTML = '<b>' + Array(blinkcode.length + 1).join(" * ") + '</b>';
         }
-        console.log('button press: ' + blinkcode);
     }
     blinkCodeStrength();
 }
@@ -640,17 +641,35 @@ function parseData(data)
             // Echo verification
             console.log('Echo');
             var ciphertext = parse.echo;
-            parse = aes_cbc_b64_decrypt(ciphertext);
+            plaintext = aes_cbc_b64_decrypt(ciphertext);
        
-            if (parse === ciphertext) {
-                parse = 'Could not parse:<br><br>' + JSON.stringify(parse, undefined, 4);
+            if (plaintext === ciphertext) {
+                parse = 'Could not parse:<br><br>' + JSON.stringify(plaintext, undefined, 4);
             }
-            //if (parse.slice(0,4).localeCompare('xpub') == 0) {
-                //var xpub = new Bitcore.HDPublicKey(parse); 
-                //var addr = new Bitcore.Address(xpub.publicKey, "livenet"); // get ripemd not supported err after broswerify'ing
-                //parse = addr.toString();
-            //}
-        
+            if (plaintext.slice(0,4).localeCompare('xpub') == 0) {
+                // Recreate receiving address from xpub
+                var xpub = parse.xpub;
+                if (!(xpub === plaintext)) {
+                    parse = "Error: Addresses do not match!";
+                } else {
+                    parse = Base58Check.decode(plaintext).slice(-33).toString('hex');
+                    parse = '51' + '21' + parse + '51' + 'ae'; // 51 ... 51 = 1 of 1 multisig
+                                                               // 21 = number of bytes to push for a compressed pubkey
+                                                               // ae = op check multisig
+                    parse = Crypto.createHash('sha256').update(new Buffer(parse, 'hex')).digest();
+                    parse = Ripemd160(parse);
+                    var header = 'Receiving address:\n\n';
+                    if (COINNET === 'MAINNET') {
+                        parse = Base58Check.encode(new Buffer('05' + parse.toString('hex'), 'hex'));
+                    } else if (COINNET === 'TESTNET') {
+                        parse = Base58Check.encode(new Buffer('c4' + parse.toString('hex'), 'hex'));
+                    } else {
+                        header = '';
+                        parse = 'Error: Coin network not defined.';
+                    }
+                    parse = "<pre>" + header + parse + "\n\n</pre>";
+                }
+            }
         }
         else {
             parse = 'Could not parse:<br><br>' + JSON.stringify(parse, undefined, 4);
@@ -660,7 +679,7 @@ function parseData(data)
     }
     catch(err) {
         console.log(err);
-        parse = data;
+        parse = "Unknown error. Data received was:<br><br>" + data;
     }
 
     if (parse == "") {
