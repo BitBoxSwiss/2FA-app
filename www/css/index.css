@@ -164,6 +164,18 @@ pre {
     /*visibility:hidden; /**/
     display:none; /**/
     width:100%;
+
+}
+
+.settingsIcon {
+    width:40px; 
+    height:auto; 
+}
+
+.pairIcon {
+    width:20px; 
+    height:auto; 
+    visibility:hidden;
 }
 
 @keyframes fade {

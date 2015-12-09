@@ -32,6 +32,7 @@
         <meta charset="utf-8" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:">
         <link rel="stylesheet" type="text/css" href="css/index.css" />
         <link rel="stylesheet" type="text/css" href="css/digiboxfont.css" />
         <title>Digital Bitbox 2FA</title>
@@ -106,12 +107,12 @@
                 <button id="forgetpwButton" class="buttonSimple">Forget all</button>
                 <br>
             </div>
-            <img id="settingsIcon" src="img/settings.png" alt="Options" style="width:40px; height:auto">
+            <img id="settingsIcon" class="settingsIcon" src="img/settings.png" alt="Options" >
         </div>
             
         
         <div id="statusDiv" class="status">
-            <img id="pairIcon" src="img/link_444.png" alt="Paired" style="width:20px; height:auto; visibility:hidden">
+            <img id="pairIcon" class="pairIcon" src="img/link_444.png" alt="Paired" >
         </div>
     
     </body>
