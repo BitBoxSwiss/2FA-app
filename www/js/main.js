@@ -32,7 +32,14 @@ var Ripemd160 = require('ripemd160');
 var Base58Check = require('bs58check')
 
 const PORT=25698;
-const COINNET='TESTNET'; // TESTNET or MAINNET
+const COINNET = 'livenet';
+//const COINNET = 'testnet';
+
+const DBB_COLOR_SAFE = "#0C0";
+const DBB_COLOR_WARN = "#880";
+const DBB_COLOR_DANGER = "#C00";
+const DBB_COLOR_BLACK = "#000";
+
 
 var ws = null,
     wsIp = null,
@@ -60,7 +67,9 @@ var ecdh,
     ecdh_secret,
     ecdh_pubkey, 
     blinkcode = [],
+    ipFile = null,
     keyFile = null,
+    ip_saved = "",
     key;
 
 ecdh = Crypto.createECDH('secp256k1');
@@ -115,7 +124,7 @@ function init()
     optionButtons = document.getElementById("optionButtons");
     scanButton = document.getElementById("scanButton");
 
-    openFile();
+    loadFiles();
     setInterval(wsFind, wsPollInterval);
 }
 
@@ -256,6 +265,7 @@ function showIpDialog() {
     hideOptionButtons();
     settingsIcon.style.visibility = "hidden";
     ipDialog.style.display = "block";
+    ipText.value = ip_saved;
 }
 
 
@@ -320,13 +330,13 @@ function blinkCodeStrength() {
         pairStrengthDiv.innerHTML = "";
     } else if (blinkcode.length < 3) {
         pairStrengthDiv.innerHTML = "Low strength";
-        pairStrengthDiv.style.color = "#C00";
+        pairStrengthDiv.style.color = DBB_COLOR_DANGER;
     } else if (blinkcode.length < 5) {
         pairStrengthDiv.innerHTML = "Medium strength";
-        pairStrengthDiv.style.color = "#880";
+        pairStrengthDiv.style.color = DBB_COLOR_WARN;
     } else if (blinkcode.length > 6) {
         pairStrengthDiv.innerHTML = 'When ready to end:<br>Tap the touch button on the Digital Bitbox.</pre>';
-        pairStrengthDiv.style.color = "#000";
+        pairStrengthDiv.style.color = DBB_COLOR_BLACK;
     } else {
         pairStrengthDiv.innerHTML = "";
     }
@@ -399,7 +409,9 @@ function pairManual() {
 
 function setIP() {
     wsIp = ipText.value;
-    cancelClear();   
+    ip_saved = ipText.value;
+    writeIp();
+    cancelClear();
 }
 
 function pairStatus() {
@@ -425,7 +437,9 @@ function setKey() {
 function forget() {
     wsIp = null;
     key = "";
+    ip_saved = "";
     writeKey();
+    writeIp();
     hideOptionButtons();
     showInfoDialog();
     infoTextDiv.innerHTML = "Settings erased";
@@ -461,12 +475,16 @@ function cancelClear() {
 }
 
 
-function openFile() {
+function loadFiles() {
 	try {
         window.resolveLocalFileSystemURL(cordova.file.dataDirectory, function(dir) {
 		    dir.getFile("keyfile.txt", {create:true}, function(file) {
 			    keyFile = file;
 		        readKey(); 
+            })
+            dir.getFile("ipfile.txt", {create:true}, function(file) {
+			    ipFile = file;
+		        readIp(); 
             })
 	    })
     }
@@ -502,6 +520,41 @@ function writeKey() {
         keyFile.createWriter(function(fileWriter) {
             //fileWriter.seek(fileWriter.length); // append
             var blob = new Blob([key], {type:"text/plain"});
+            fileWriter.write(blob);
+        })
+    }
+    catch(err) {
+        infoTextDiv.innerHTML = err.message;
+        console.log(err.message);
+    }
+}
+
+
+function readIp() {
+    try {    
+        ipFile.file(function(file) {
+            var reader = new FileReader();
+            reader.onloadend = function(e) {
+                ip_saved = e.target.result;
+            }
+            reader.readAsText(file);
+        })
+        return ip_saved; 
+    }
+    catch(err) {
+        infoTextDiv.innerHTML = err.message;
+        console.log(err.message);
+        return null;
+    }
+}
+
+
+function writeIp() {
+	try {
+        if(!ipFile) return;
+        ipFile.createWriter(function(fileWriter) {
+            //fileWriter.seek(fileWriter.length); // append
+            var blob = new Blob([ip_saved], {type:"text/plain"});
             fileWriter.write(blob);
         })
     }
@@ -594,7 +647,7 @@ function parseData(data)
     
     try {
         parse = JSON.parse(data);
-                
+                 
         if (typeof parse.verify_output == "object") {
             // QR scan
             // If crypto-currency 'ouputs', cleanly print result
@@ -646,7 +699,7 @@ function parseData(data)
             if (plaintext === ciphertext) {
                 parse = 'Could not parse:<br><br>' + JSON.stringify(plaintext, undefined, 4);
             }
-            if (plaintext.slice(0,4).localeCompare('xpub') == 0) {
+            else if (plaintext.slice(0,4).localeCompare('xpub') == 0) {
                 // Recreate receiving address from xpub
                 var xpub = parse.xpub;
                 if (!(xpub === plaintext)) {
@@ -659,9 +712,9 @@ function parseData(data)
                     parse = Crypto.createHash('sha256').update(new Buffer(parse, 'hex')).digest();
                     parse = Ripemd160(parse);
                     var header = 'Receiving address:\n\n';
-                    if (COINNET === 'MAINNET') {
+                    if (COINNET === 'livenet') {
                         parse = Base58Check.encode(new Buffer('05' + parse.toString('hex'), 'hex'));
-                    } else if (COINNET === 'TESTNET') {
+                    } else if (COINNET === 'testnet') {
                         parse = Base58Check.encode(new Buffer('c4' + parse.toString('hex'), 'hex'));
                     } else {
                         header = '';
@@ -669,6 +722,13 @@ function parseData(data)
                     }
                     parse = "<pre>" + header + parse + "\n\n</pre>";
                 }
+            }
+            else if (typeof plaintext.sign == "object") {
+                parse = 'Parse sign:<br><br>' + JSON.stringify(plaintext, undefined, 4);
+                console.log(parse)
+            } else {
+                parse = 'No operation for:<br><br>' + JSON.stringify(parse, undefined, 4);
+                parse = plaintext;
             }
         }
         else {
@@ -682,9 +742,9 @@ function parseData(data)
         parse = "Unknown error. Data received was:<br><br>" + data;
     }
 
-    if (parse == "") {
+    if (parse == "")
         parse = "--";
-    }
+
 
     return parse;
 }
