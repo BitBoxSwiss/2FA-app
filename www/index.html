@@ -32,7 +32,10 @@
         <meta charset="utf-8" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: ws:">
+
+        
+        
         <link rel="stylesheet" type="text/css" href="css/index.css" />
         <link rel="stylesheet" type="text/css" href="css/digiboxfont.css" />
         <title>Digital Bitbox 2FA</title>
@@ -101,7 +104,7 @@
         </div>
         <div id="optionsDialog" class="options">
             <div id="optionButtons" class="hiddenButton">
-                <button id="pairOptionButton" class="buttonSimple">Pair with PC</button>
+                <button id="pairOptionButton" class="buttonSimple">Pair with device</button>
                 <button id="showScanButton" class="buttonSimple">Scan QR code</button>
                 <!--button id="changepwButton" class="buttonSimple">Enter password</button-->
                 <button id="forgetpwButton" class="buttonSimple">Forget all</button>
