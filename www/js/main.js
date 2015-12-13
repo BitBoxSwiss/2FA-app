@@ -24,21 +24,29 @@
 
 */
 
+'use strict';
 
 var Crypto = require("crypto");
-var Bitcore = require("bitcore");
-var Script = Bitcore.Script;
+var Bitcore = require("bitcore-lib");
 var Ripemd160 = require('ripemd160');
 var Base58Check = require('bs58check')
+var Reverse = require("buffer-reverse")
 
-const PORT=25698;
+
+const PORT = 25698;
+const WARNFEE = 10000; // satoshis TODO update
+const SAT2BTC = 100000000; // conversion
+const TIMEOUT_WORKER = 5000; // ms
 const COINNET = 'livenet';
 //const COINNET = 'testnet';
 
-const DBB_COLOR_SAFE = "#0C0";
-const DBB_COLOR_WARN = "#880";
-const DBB_COLOR_DANGER = "#C00";
-const DBB_COLOR_BLACK = "#000";
+const DBB_COLOR_SAFE = "#0C0",
+      DBB_COLOR_WARN = "#880",
+      DBB_COLOR_DANGER = "#C00",
+      DBB_COLOR_BLACK = "#000";
+    
+const OP_CHECKMULTISIG = 'ae',
+      OP_1 = '51';
 
 
 var ws = null,
@@ -63,16 +71,13 @@ var pairIcon,
     infoTextDiv,
     pairStrengthDiv;
 
-var ecdh,
-    ecdh_secret,
-    ecdh_pubkey, 
+var ecdh = Crypto.createECDH('secp256k1'),
     blinkcode = [],
     ipFile = null,
     keyFile = null,
     ip_saved = "",
     key;
 
-ecdh = Crypto.createECDH('secp256k1');
 
 
 
@@ -185,6 +190,7 @@ function wsStart() {
     }
 };
 
+
 function wsSend(message) {
     if(ws) {
         if(ws.readyState == ws.OPEN) {
@@ -192,7 +198,6 @@ function wsSend(message) {
         }
     }
 }
-
 
 
 function wsFind() {
@@ -207,12 +212,14 @@ function wsFind() {
     }
 }
 
+
 function wsFound(obj) {
     wsAddr = 'ws://' + obj.service.addresses[0] + ':' + obj.service.port;
     //wsAddr = 'ws://' + obj.service.server + ':' + obj.service.port;
     wsName = obj.service.name;
     wsStart();
 }
+
 
 //function mdnsAdvertise() {
     //const PORT = 25698;
@@ -592,7 +599,7 @@ function startScan()
 
 
 // ----------------------------------------------------------------------------
-// Parsing JSON and crypto ops
+// Crypto
 // 
 
 function aes_cbc_b64_decrypt(ciphertext)
@@ -610,7 +617,6 @@ function aes_cbc_b64_decrypt(ciphertext)
     catch(err) {
         console.log(err);
         res = ciphertext;
-        //return err.message;
     }
     
     return res;
@@ -628,7 +634,6 @@ function aes_cbc_b64_encrypt(plaintext)
     }
     catch(err) {
         console.log(err);
-        //return err.message;
     }
 }
 
@@ -641,13 +646,211 @@ function ecdhPubkey() {
 }    
 
 
+function multisigHash(script) {
+    var hash = Crypto.createHash('sha256')
+               .update(new Buffer(script, 'hex'))
+               .digest();
+    hash = Ripemd160(hash);
+    if (COINNET === 'livenet') {
+        hash = Base58Check.encode(new Buffer('05' + hash.toString('hex'), 'hex'));
+    } else if (COINNET === 'testnet') {
+        hash = Base58Check.encode(new Buffer('c4' + hash.toString('hex'), 'hex'));
+    } else {
+        hash = 0;
+    }
+    return hash;
+}
+
+
+function multisig1of1(publickey) {
+    // 51 ... 51 = 1 of 1 multisig
+    // 0x21 = number of bytes to push for a compressed pubkey
+    // ae = op check multisig
+    var pushbytes = (publickey.length  / 2).toString(16);
+    var script = OP_1 + pushbytes + publickey + OP_1 + OP_CHECKMULTISIG;
+    return multisigHash(script);
+}
+
+
+function getBalance(addr) {
+    var balance = undefined;
+    var blockWorker = new Worker("js/blockWorker.js");
+    blockWorker.postMessage("https://blockexplorer.com/api/addr/" + addr + "/balance");
+    blockWorker.postMessage("https://insight.bitpay.com/api/addr/" + addr + "/balance");
+    blockWorker.postMessage("https://blockchain.info/q/addressbalance/" + addr);
+    blockWorker.onmessage = function(e) {
+        balance = e.data;
+        console.log('Message received from worker:', balance);
+        blockWorker.terminate();
+    };
+    
+    // burn CPUs waiting for a worker to return
+    var timeout_ms = TIMEOUT_WORKER + new Date().getTime();
+    while (Date().now < timeout_ms){
+        if (balance !== undefined)
+            break;
+    }
+    return balance;
+}
+
+
+// ----------------------------------------------------------------------------
+// Parse input
+// 
+
+function process_verify_transaction(plaintext) 
+{    
+    var sign = JSON.parse(plaintext).sign,
+        transaction = new Bitcore.Transaction(sign.meta),
+        res_detail = '',
+        res_short = '',
+        total_in = 0, 
+        total_out = 0,
+        err = '';
+
+
+    // Get outputs and amounts
+    res_detail += "\nOutputs:\n";
+    for (var i = 0; i < transaction.outputs.length; i++) {
+        var address, amount, present;
+        address = transaction.outputs[i].script
+            .toAddress(COINNET).toString();
+
+        amount = transaction.outputs[i].satoshis;
+        total_out += amount / SAT2BTC;
+
+        // Check if the output address is a change address
+        present = false;
+        for (var j = 0; j < sign.checkpub.length; j++) {
+            var pubk = sign.checkpub[j].pubkey; 
+            var checkaddress = multisig1of1(pubk);
+            if (checkaddress === address) {
+                present = sign.checkpub[j].present; 
+            }
+        }
+        
+        res_detail += "   " + address + "  " + amount / SAT2BTC + " BTC\t" + present + "\n";
+        
+        if (!present || transaction.outputs.length == 1)            
+            res_short += amount / SAT2BTC + " BTC\n" + address + "\n\n";
+    }
+
+    if (res_short == "")
+        res_short = "\nMoving:\n\n" + total_out + " BTC\n(internally)\n\n";
+    else
+        res_short = "\nSending:\n\n" + res_short;
+        
+    res_short = "<pre>" + res_short + "</pre>";
+    console.log(res_short);
+
+
+    // Get input addresses and balances
+    res_detail += "\nInputs:\n";
+    for (var i = 0; i < transaction.inputs.length; i++) {
+        var script, address, balance;
+        script = transaction.inputs[i].script;
+        script = script.chunks[script.chunks.length - 1].buf;
+        address = multisigHash(script);
+        balance = getBalance(address);
+        res_detail += "   " + address + "  " + balance / SAT2BTC + " BTC\n";
+        total_in += balance / SAT2BTC;
+    }
+
+
+    // Calculate fee (inputs - outputs)
+    res_detail = '   Fee:     ' + (total_in - total_out) + ' BTC\n' + res_detail;
+    res_detail = '   Outputs: ' + total_out              + ' BTC\n' + res_detail;
+    res_detail = '   Inputs:  ' + total_in               + ' BTC\n' + res_detail;
+
+
+    if ((total_in - total_out) > WARNFEE)
+        err += 'WARNING: High fee!<br>';
+
+
+    // Verify that input hashes match meta utx
+    res_detail += "\nHashes:\n";
+    for (var j = 0; j < sign.data.length; j++) {
+        var present = false;
+        for (var i = 0; i < transaction.inputs.length; i++) {
+            var nhashtype = Bitcore.crypto.Signature.SIGHASH_ALL;
+            var script = transaction.inputs[i].script
+                script = script.chunks[script.chunks.length - 1].buf; // redeem script is 2nd to last chunk
+            
+            var sighash = Bitcore.Transaction.sighash
+                .sighash(transaction, nhashtype, i, script);
+           
+            if (sign.data[j].hash === Reverse(sighash).toString('hex'))
+                present = true; 
+        }
+        
+        if (present === false)
+            err += 'WARNING: Unknown data being signed!<br>';
+        
+        res_detail += "   " + sign.data[j].hash + "   " + present + "\n";
+    }
+
+    // Extra information
+    res_detail += "\n2FA message received:\n" + JSON.stringify(sign, undefined, 4);
+    res_detail = "<pre>" + res_detail + "</pre>";
+    console.log(res_detail);
+    
+    
+    if (err != '')
+        res_short = err + res_detail;
+
+    return [res_short, res_detail];
+}
+
+
+function process_2FA_pairing(parse) 
+{    
+    var ciphertext = parse.verifypass.ciphertext;
+    var pubkey = parse.verifypass.ecdh;
+    var ecdh_secret = ecdh.computeSecret(pubkey, 'hex', 'hex');
+    
+    key = Crypto.createHash('sha256').update(new Buffer(ecdh_secret, 'hex')).digest('hex');
+    key = Crypto.createHash('sha256').update(new Buffer(key, 'hex')).digest('hex');
+    var k = new Buffer(key, "hex");
+    for (var i = 0; i < blinkcode.length; i++) {
+        k[i % 32] ^= blinkcode[i]; 
+    }
+    key = k.toString('hex');
+    key = Crypto.createHash('sha256').update(new Buffer(key, 'ascii')).digest('hex');
+    key = Crypto.createHash('sha256').update(new Buffer(key, 'hex')).digest('hex');
+
+    writeKey();
+    
+    if (aes_cbc_b64_decrypt(ciphertext) === 'Digital Bitbox 2FA')
+        parse = "Successfully paired.";
+    else 
+        parse = "Pairing failed!";
+    
+    return parse;
+}
+  
+
+function process_verify_address(plaintext, parse) 
+{    
+    if (!(parse.xpub === plaintext)) {
+        return 'Error: Addresses do not match!';
+    } else {
+        parse = Base58Check.decode(plaintext).slice(-33).toString('hex');
+        parse = multisig1of1(parse);
+        if (!parse) {
+            return 'Error: Coin network not defined.';
+        }
+        return "<pre>Receiving address:\n\n" + parse + "\n\n</pre>";
+    }
+}
+
+
 function parseData(data)
 {
     var parse;
     
     try {
         parse = JSON.parse(data);
-                 
+
         if (typeof parse.verify_output == "object") {
             // QR scan
             // If crypto-currency 'ouputs', cleanly print result
@@ -655,9 +858,9 @@ function parseData(data)
             for (var i = 0; i < parse.verify_output.length; i++) {
                 var s;
                 s = new Buffer(parse.verify_output[i].script, "hex");
-                s = new Script(s);
-                s = s.toAddress("livenet").toString();
-                pptmp += parse.verify_output[i].value / 100000000 + " BTC\n" + s + "\n\n";
+                s = new Bitcore.Script(s);
+                s = s.toAddress(COINNET).toString();
+                pptmp += parse.verify_output[i].value / SAT2BTC + " BTC\n" + s + "\n\n";
             }
             if (typeof parse.pin == "string") {
                 pptmp += "\nLock code:  " + parse.pin;
@@ -665,67 +868,29 @@ function parseData(data)
             parse = "<pre>" + pptmp + "</pre>";
         }
         else if (typeof parse.verifypass == "object") {
-            // 2FA - PC pairing
-            var ciphertext = parse.verifypass.ciphertext;
-            var pubkey = parse.verifypass.ecdh;
-            ecdh_secret = ecdh.computeSecret(pubkey, 'hex', 'hex');
-            
-            key = Crypto.createHash('sha256').update(new Buffer(ecdh_secret, 'hex')).digest('hex');
-            key = Crypto.createHash('sha256').update(new Buffer(key, 'hex')).digest('hex');
-            var k = new Buffer(key, "hex");
-            for (var i = 0; i < blinkcode.length; i++) {
-                k[i % 32] ^= blinkcode[i]; 
-            }
-            key = k.toString('hex');
-            key = Crypto.createHash('sha256').update(new Buffer(key, 'ascii')).digest('hex');
-            key = Crypto.createHash('sha256').update(new Buffer(key, 'hex')).digest('hex');
-
-            writeKey();
-            var message = aes_cbc_b64_decrypt(ciphertext);
-            console.log(blinkcode);
-            console.log('ecdh check message: ', message);
-            
-            if (message === 'Digital Bitbox 2FA')
-                parse = "Successfully paired.";
-            else 
-                parse = "Pairing failed!";
+            parse = process_2FA_pairing(parse);
         } 
         else if (typeof parse.echo == "string") {
             // Echo verification
-            console.log('Echo');
             var ciphertext = parse.echo;
-            plaintext = aes_cbc_b64_decrypt(ciphertext);
+            var plaintext = aes_cbc_b64_decrypt(ciphertext);
        
             if (plaintext === ciphertext) {
-                parse = 'Could not parse:<br><br>' + JSON.stringify(plaintext, undefined, 4);
+                return 'Could not parse:<br><br>' + JSON.stringify(plaintext, undefined, 4);
             }
-            else if (plaintext.slice(0,4).localeCompare('xpub') == 0) {
-                // Recreate receiving address from xpub
-                var xpub = parse.xpub;
-                if (!(xpub === plaintext)) {
-                    parse = "Error: Addresses do not match!";
-                } else {
-                    parse = Base58Check.decode(plaintext).slice(-33).toString('hex');
-                    parse = '51' + '21' + parse + '51' + 'ae'; // 51 ... 51 = 1 of 1 multisig
-                                                               // 21 = number of bytes to push for a compressed pubkey
-                                                               // ae = op check multisig
-                    parse = Crypto.createHash('sha256').update(new Buffer(parse, 'hex')).digest();
-                    parse = Ripemd160(parse);
-                    var header = 'Receiving address:\n\n';
-                    if (COINNET === 'livenet') {
-                        parse = Base58Check.encode(new Buffer('05' + parse.toString('hex'), 'hex'));
-                    } else if (COINNET === 'testnet') {
-                        parse = Base58Check.encode(new Buffer('c4' + parse.toString('hex'), 'hex'));
-                    } else {
-                        header = '';
-                        parse = 'Error: Coin network not defined.';
-                    }
-                    parse = "<pre>" + header + parse + "\n\n</pre>";
-                }
+            
+            if (plaintext.slice(0,4).localeCompare('xpub') == 0) {
+                parse = process_verify_address(plaintext, parse);
             }
-            else if (typeof plaintext.sign == "object") {
-                parse = 'Parse sign:<br><br>' + JSON.stringify(plaintext, undefined, 4);
-                console.log(parse)
+            else if (typeof JSON.parse(plaintext).sign == "object") {
+                var pin = '';
+                if (typeof parse.pin == "string")
+                    pin = "\nLock code:  " + parse.pin;
+
+                var res = process_verify_transaction(plaintext);
+                //var details = res[1];
+                parse = res[0] + pin;
+            
             } else {
                 parse = 'No operation for:<br><br>' + JSON.stringify(parse, undefined, 4);
                 parse = plaintext;
@@ -749,5 +914,4 @@ function parseData(data)
     return parse;
 }
 
-   
 
