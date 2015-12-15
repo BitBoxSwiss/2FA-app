@@ -61,6 +61,7 @@ var pairIcon,
     pwText,
     ipText,
     clearButton,
+    detailsButton,
     pairBeginButton,
     pairCancelButton,
     pairManualButton,
@@ -78,7 +79,8 @@ var ecdh = Crypto.createECDH('secp256k1'),
     key;
 
 var inputAddresses = [];
-
+var res_detail = '';
+        
 
 
 // ----------------------------------------------------------------------------
@@ -97,6 +99,7 @@ function init()
     document.querySelector("#submitIpButton").addEventListener("touchstart", setIP, false);
     document.querySelector("#forgetpwButton").addEventListener("touchstart", forget, false);
     document.querySelector("#settingsIcon").addEventListener("touchstart", displaySettings, false);
+    document.querySelector("#detailsButton").addEventListener("touchstart", details, false);
     document.querySelector("#pairOptionButton").addEventListener("touchstart", pairEnter, false);
     document.querySelector("#pairBeginButton").addEventListener("touchstart", pairPc, false);
     document.querySelector("#pairCancelButton").addEventListener("touchstart", cancelClear, false);
@@ -122,6 +125,7 @@ function init()
     pairDialog = document.getElementById("pairDialog");
 	infoTextDiv = document.querySelector("#infoText");
     clearButton = document.getElementById("clearButton");
+    detailsButton = document.getElementById("detailsButton");
     pairBeginButton = document.getElementById("pairBeginButton");
     pairCancelButton = document.getElementById("pairCancelButton");
     pairManualButton = document.getElementById("pairManualButton");
@@ -236,6 +240,7 @@ function showInfoDialog(text) {
     hidePairDialog();
     pwDialog.style.display = "none";
     ipDialog.style.display = "none";
+    detailsButton.style.display = "none";
     clearButton.style.display = "inline";
 }
 
@@ -568,6 +573,15 @@ function writeIp() {
 // Scan UI
 // 
 
+function details()
+{
+    showInfoDialog("<pre>" + res_detail + "</pre>");
+}
+
+// ----------------------------------------------------------------------------
+// Scan UI
+// 
+
 function startScan()
 {
 	try {
@@ -704,15 +718,15 @@ function getInputs(transaction, sign) {
 // Parse input
 // 
 
-
 function process_verify_transaction(transaction, sign) 
 {    
-    var res_detail = '',
-        res_short = '',
+    var res_short = '',
         total_in = 0, 
         total_out = 0,
-        err = '';
+        err = '',
+        res = '';
 
+    res_detail = '';
 
     // Get outputs and amounts
     res_detail += "\nOutputs:\n";
@@ -734,10 +748,14 @@ function process_verify_transaction(transaction, sign)
             }
         }
         
-        res_detail += "   " + address + "  " + amount / SAT2BTC + " BTC\t" + present + "\n";
-        
-        if (!present || transaction.outputs.length == 1)            
+        if (!present || transaction.outputs.length == 1) {
+            res = address + "  " + amount / SAT2BTC + " BTC\n";
+            res_detail += '<span style="color: ' + DBB_COLOR_WARN + ';">' + res + '</span>';
             res_short += amount / SAT2BTC + " BTC\n" + address + "\n\n";
+        } else {
+            res = address + "  " + amount / SAT2BTC + " BTC (change address)\n";
+            res_detail += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '</span>';
+        }
     }
 
     if (res_short == "")
@@ -751,29 +769,36 @@ function process_verify_transaction(transaction, sign)
     for (var i = 0; i < inputAddresses.length; i++) {
         var address = inputAddresses[i].address;
         var balance = inputAddresses[i].balance;
-        res_detail += "   " + address + "  " + balance / SAT2BTC + " BTC\n";
+        res = address + "  " + balance / SAT2BTC + " BTC\n";
+        res_detail += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '</span>';
         total_in += balance / SAT2BTC;
     }
 
 
     // Calculate fee (inputs - outputs)
-    res_detail = '   Fee:     ' + (total_in - total_out) + ' BTC\n' + res_detail;
-    res_detail = '   Outputs: ' + total_out              + ' BTC\n' + res_detail;
-    res_detail = '   Inputs:  ' + total_in               + ' BTC\n' + res_detail;
-
-    res_short += (total_in - total_out) / SAT2BTC + " BTC\nFee\n\n";
-
+    res_detail += '\nFee:\n';
+    res = (total_in - total_out).toFixed(8) + ' BTC\n';
+    if ((total_in - total_out) > WARNFEE) {
+        var errmsg = 'WARNING: High fee!';
+        err += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + errmsg + '<br><br></span>';
+        res_detail += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '/span>';
+    } else {
+        res_detail += '<span style="color: ' + DBB_COLOR_WARN + ';">' + res + '</span>';
+    }
+    
+    res = "\nFee: " + (total_in - total_out).toFixed(8) + " BTC\n\n";
+    if ((total_in - total_out) > WARNFEE) {
+        res_short += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '<br><br></span>';
+    } else {
+        res_short += '<span style="color: ' + DBB_COLOR_BLACK + ';">' + res + '<br><br></span>';
+    }
+            
     if (typeof sign.pin == "string")
         res_short += "\n\nLock code:  " + sign.pin;
 
     console.log(res_short);
     showInfoDialog("<pre>" + res_short + "</pre>");
-
-
-    if ((total_in - total_out) > WARNFEE) {
-        var errmsg = 'WARNING: High fee!';
-        err += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + errmsg + '<br><br></span>';
-    }
+    detailsButton.style.display = "inline";
 
 
     // Verify that input hashes match meta utx
@@ -791,23 +816,29 @@ function process_verify_transaction(transaction, sign)
             if (sign.data[j].hash === Reverse(sighash).toString('hex'))
                 present = true; 
         }
-        
+
         if (present === false) {
             var errmsg = 'WARNING: Unknown data being signed!';
             err += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + errmsg + '<br><br></span>';
+            res = "Unknown: " + sign.data[j].hash;
+            res_detail += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '</span>';
+        } else {
+            res = sign.data[j].hash;
+            res_detail += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '</span>';
         }
-
-        res_detail += "   " + sign.data[j].hash + "   " + present + "\n";
     }
 
+    if (typeof sign.pin == "string")
+        res_detail += "\nLock code:  " + sign.pin;
+    
     // Extra information
-    res_detail += "\n2FA message received:\n" + JSON.stringify(sign, undefined, 4);
+    console.log("2FA message received:\n" + JSON.stringify(sign, undefined, 4));
     console.log(res_detail);
     console.log(err);
             
     if (err != '')
         showInfoDialog("<pre>" + err + res_detail + "</pre>");
-    
+        
 }
 
 
