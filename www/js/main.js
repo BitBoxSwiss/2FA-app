@@ -36,7 +36,6 @@ var Reverse = require("buffer-reverse")
 const PORT = 25698;
 const WARNFEE = 10000; // satoshis TODO update
 const SAT2BTC = 100000000; // conversion
-const TIMEOUT_WORKER = 5000; // ms
 const COINNET = 'livenet';
 //const COINNET = 'testnet';
 
@@ -78,6 +77,7 @@ var ecdh = Crypto.createECDH('secp256k1'),
     ip_saved = "",
     key;
 
+var inputAddresses = [];
 
 
 
@@ -173,8 +173,7 @@ function wsStart() {
 
         ws.onmessage = function (event) {
             console.log('WebSocket received: ', event.data);
-            infoTextDiv.innerHTML = parseData(event.data);
-            showInfoDialog();
+            parseData(event.data);
         };
 
         ws.onerror = function () {
@@ -231,7 +230,8 @@ function wsFound(obj) {
 // General UI
 //
 
-function showInfoDialog() {
+function showInfoDialog(text) {
+    infoTextDiv.innerHTML = text;
     hideOptionButtons();
     hidePairDialog();
     pwDialog.style.display = "none";
@@ -390,8 +390,7 @@ function pairEnter() {
     }
     
     if (navigator.connection.type != Connection.WIFI) {
-        infoTextDiv.innerHTML = 'A WiFi connection is needed for pairing.';
-        showInfoDialog(); 
+        showInfoDialog('A WiFi connection is needed for pairing.'); 
     } else {
         showNoWSDialog();
     }
@@ -425,8 +424,7 @@ function pairStatus() {
     if(clearButton.style.display == "inline"){
         cancelClear();
     } else {
-        infoTextDiv.innerHTML = 'Digital Bitbox PC app connect at:<br>' + wsAddr + '<br>' + wsName;
-        showInfoDialog(); 
+        showInfoDialog('Digital Bitbox PC app connect at:<br>' + wsAddr + '<br>' + wsName);
     }
 }
 
@@ -448,21 +446,16 @@ function forget() {
     writeKey();
     writeIp();
     hideOptionButtons();
-    showInfoDialog();
-    infoTextDiv.innerHTML = "Settings erased";
+    showInfoDialog("Settings erased");
 }
 
 
 function saveKey() {
     try {
         key = pwText.value;
-        
         writeKey();
-        
         hidePasswordDialog();
-        showInfoDialog();
-        infoTextDiv.innerHTML = "Password set";
-    
+        showInfoDialog("Password set");
     }
     catch(err) {
         infoTextDiv.innerHTML = err.message;
@@ -475,8 +468,7 @@ function cancelClear() {
     hidePasswordDialog();
     hidePairDialog();
     hideIpDialog();
-    showInfoDialog();
-    infoTextDiv.innerHTML = "";
+    showInfoDialog("");
     clearButton.style.display = "none";
     scanButton.style.display = "none";
 }
@@ -582,8 +574,7 @@ function startScan()
     cordova.plugins.barcodeScanner.scan(
 		function (result)
         {
-            infoTextDiv.innerHTML = parseData(aes_cbc_b64_decrypt(result.text));
-            showInfoDialog();
+            parseData(aes_cbc_b64_decrypt(result.text));
         }, 
 		function (error) {
 			console.log("Scanning failed: " + error);
@@ -663,46 +654,60 @@ function multisigHash(script) {
 
 
 function multisig1of1(publickey) {
-    // 51 ... 51 = 1 of 1 multisig
-    // 0x21 = number of bytes to push for a compressed pubkey
-    // ae = op check multisig
     var pushbytes = (publickey.length  / 2).toString(16);
     var script = OP_1 + pushbytes + publickey + OP_1 + OP_CHECKMULTISIG;
     return multisigHash(script);
 }
 
 
-function getBalance(addr) {
-    var balance = undefined;
+function getInputs(transaction, sign) {
     var blockWorker = new Worker("js/blockWorker.js");
-    blockWorker.postMessage("https://blockexplorer.com/api/addr/" + addr + "/balance");
-    blockWorker.postMessage("https://insight.bitpay.com/api/addr/" + addr + "/balance");
-    blockWorker.postMessage("https://blockchain.info/q/addressbalance/" + addr);
-    blockWorker.onmessage = function(e) {
-        balance = e.data;
-        console.log('Message received from worker:', balance);
-        blockWorker.terminate();
-    };
-    
-    // burn CPUs waiting for a worker to return
-    var timeout_ms = TIMEOUT_WORKER + new Date().getTime();
-    while (Date().now < timeout_ms){
-        if (balance !== undefined)
-            break;
+    inputAddresses = [];
+    for (var i = 0; i < transaction.inputs.length; i++) {
+        var script = transaction.inputs[i].script;
+            script = script.chunks[script.chunks.length - 1].buf;
+        var addr = multisigHash(script);
+        blockWorker.postMessage("https://blockexplorer.com/api/addr/" + addr + "/balance");
+        blockWorker.postMessage("https://insight.bitpay.com/api/addr/" + addr + "/balance");
+        blockWorker.postMessage("https://blockchain.info/q/addressbalance/" + addr);
+        blockWorker.onmessage = function(e) {
+            var url = e.data[1].split('/');
+            var address;
+            for (var i = 0; i < url.length; i++) {
+                if (url[i].length === 34)
+                    address = url[i]; 
+            }
+           
+            for (var i = 0; i < inputAddresses.length; i++) {
+                // skip if already got the balance 
+                if (address === inputAddresses[i].address)
+                    return;
+            }
+                    
+            var input = {};
+            input.address = address;
+            input.balance = e.data[0];
+            inputAddresses.push(input);
+            
+            if (inputAddresses.length === transaction.inputs.length) {
+                blockWorker.terminate();
+                console.log('Got all address balances.', inputAddresses.length);
+                process_verify_transaction(transaction, sign);
+            }
+        };
     }
-    return balance;
 }
+
 
 
 // ----------------------------------------------------------------------------
 // Parse input
 // 
 
-function process_verify_transaction(plaintext) 
+
+function process_verify_transaction(transaction, sign) 
 {    
-    var sign = JSON.parse(plaintext).sign,
-        transaction = new Bitcore.Transaction(sign.meta),
-        res_detail = '',
+    var res_detail = '',
         res_short = '',
         total_in = 0, 
         total_out = 0,
@@ -739,19 +744,13 @@ function process_verify_transaction(plaintext)
         res_short = "\nMoving:\n\n" + total_out + " BTC\n(internally)\n\n";
     else
         res_short = "\nSending:\n\n" + res_short;
-        
-    res_short = "<pre>" + res_short + "</pre>";
-    console.log(res_short);
-
+       
 
     // Get input addresses and balances
     res_detail += "\nInputs:\n";
-    for (var i = 0; i < transaction.inputs.length; i++) {
-        var script, address, balance;
-        script = transaction.inputs[i].script;
-        script = script.chunks[script.chunks.length - 1].buf;
-        address = multisigHash(script);
-        balance = getBalance(address);
+    for (var i = 0; i < inputAddresses.length; i++) {
+        var address = inputAddresses[i].address;
+        var balance = inputAddresses[i].balance;
         res_detail += "   " + address + "  " + balance / SAT2BTC + " BTC\n";
         total_in += balance / SAT2BTC;
     }
@@ -762,9 +761,19 @@ function process_verify_transaction(plaintext)
     res_detail = '   Outputs: ' + total_out              + ' BTC\n' + res_detail;
     res_detail = '   Inputs:  ' + total_in               + ' BTC\n' + res_detail;
 
+    res_short += (total_in - total_out) / SAT2BTC + " BTC\nFee\n\n";
 
-    if ((total_in - total_out) > WARNFEE)
-        err += 'WARNING: High fee!<br>';
+    if (typeof sign.pin == "string")
+        res_short += "\n\nLock code:  " + sign.pin;
+
+    console.log(res_short);
+    showInfoDialog("<pre>" + res_short + "</pre>");
+
+
+    if ((total_in - total_out) > WARNFEE) {
+        var errmsg = 'WARNING: High fee!';
+        err += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + errmsg + '<br><br></span>';
+    }
 
 
     // Verify that input hashes match meta utx
@@ -783,22 +792,22 @@ function process_verify_transaction(plaintext)
                 present = true; 
         }
         
-        if (present === false)
-            err += 'WARNING: Unknown data being signed!<br>';
-        
+        if (present === false) {
+            var errmsg = 'WARNING: Unknown data being signed!';
+            err += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + errmsg + '<br><br></span>';
+        }
+
         res_detail += "   " + sign.data[j].hash + "   " + present + "\n";
     }
 
     // Extra information
     res_detail += "\n2FA message received:\n" + JSON.stringify(sign, undefined, 4);
-    res_detail = "<pre>" + res_detail + "</pre>";
     console.log(res_detail);
-    
-    
+    console.log(err);
+            
     if (err != '')
-        res_short = err + res_detail;
-
-    return [res_short, res_detail];
+        showInfoDialog("<pre>" + err + res_detail + "</pre>");
+    
 }
 
 
@@ -865,53 +874,49 @@ function parseData(data)
             if (typeof parse.pin == "string") {
                 pptmp += "\nLock code:  " + parse.pin;
             }
-            parse = "<pre>" + pptmp + "</pre>";
+            showInfoDialog("<pre>" + pptmp + "</pre>");
         }
         else if (typeof parse.verifypass == "object") {
-            parse = process_2FA_pairing(parse);
+            showInfoDialog(process_2FA_pairing(parse));
         } 
         else if (typeof parse.echo == "string") {
             // Echo verification
             var ciphertext = parse.echo;
             var plaintext = aes_cbc_b64_decrypt(ciphertext);
-       
+            
             if (plaintext === ciphertext) {
-                return 'Could not parse:<br><br>' + JSON.stringify(plaintext, undefined, 4);
+                showInfoDialog('Could not parse:<br><br>' + JSON.stringify(plaintext, undefined, 4));
             }
             
             if (plaintext.slice(0,4).localeCompare('xpub') == 0) {
-                parse = process_verify_address(plaintext, parse);
+                showInfoDialog(process_verify_address(plaintext, parse));
             }
             else if (typeof JSON.parse(plaintext).sign == "object") {
-                var pin = '';
-                if (typeof parse.pin == "string")
-                    pin = "\nLock code:  " + parse.pin;
-
-                var res = process_verify_transaction(plaintext);
-                //var details = res[1];
-                parse = res[0] + pin;
-            
+                var sign = JSON.parse(plaintext).sign;
+                var transaction = new Bitcore.Transaction(sign.meta);
+                if (typeof JSON.parse(plaintext).pin == "string")
+                    sign.pin = JSON.parse(plaintext).pin;
+                    
+                getInputs(transaction, sign);
+                
             } else {
-                parse = 'No operation for:<br><br>' + JSON.stringify(parse, undefined, 4);
-                parse = plaintext;
+                showInfoDialog('No operation for:<br><br>' + JSON.stringify(parse, undefined, 4));
             }
         }
         else {
-            parse = 'Could not parse:<br><br>' + JSON.stringify(parse, undefined, 4);
+            showInfoDialog('Could not parse:<br><br>' + JSON.stringify(parse, undefined, 4));
             console.log('Could not parse data.');
         }
     
     }
     catch(err) {
         console.log(err);
-        parse = "Unknown error. Data received was:<br><br>" + data;
+        showInfoDialog("Unknown error. Data received was:<br><br>" + data);
     }
 
     if (parse == "")
-        parse = "--";
+        showInfoDialog("--");
 
-
-    return parse;
 }
 
 

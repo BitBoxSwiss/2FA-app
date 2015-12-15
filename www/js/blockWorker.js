@@ -6,7 +6,7 @@ onmessage = function(api) {
     req.onreadystatechange = function() {
         if (req.readyState == 4) {
             if (req.status == 200) {
-                postMessage(req.responseText);
+                postMessage([req.responseText, req.responseURL]);
             }
         }
     }
