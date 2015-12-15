@@ -21,8 +21,8 @@ Requires:
 Command line build and install:
 
 ```
-git clone https://github.com/digitalbitbox/QR_app.git
-cordova create digitalbitbox2FA com.digitalbitbox.qr "DigitalBitboxQR" --copy-from=./QR_app/
+git clone https://github.com/digitalbitbox/2FA-app.git 
+cordova create digitalbitbox2FA com.digitalbitbox.tfa "DigitalBitbox2FA" --copy-from=./2FA-app/
 cd digitalbitbox2FA
 cordova platform add android 
 cordova plugin add https://github.com/wildabeast/BarcodeScanner
@@ -30,7 +30,8 @@ cordova plugin add cordova-plugin-file
 cordova plugin add cordova-zeroconf-plugin  #  mDNS (currently Android only)
 cordova plugin add cordova-plugin-crosswalk-webview  #  supports websockets
 cordova plugin add cordova-plugin-network-information
-npm install bitcore ripemd160 bs58check
+cordova plugin add cordova-plugin-whitelist
+npm install bitcore-lib ripemd160 bs58check buffer-reverse
 browserify www/js/main.js -o www/js/app.js
 cordova build android
 ```

@@ -24,15 +24,29 @@
 
 */
 
+'use strict';
 
 var Crypto = require("crypto");
-var Bitcore = require("bitcore");
-var Script = Bitcore.Script;
+var Bitcore = require("bitcore-lib");
 var Ripemd160 = require('ripemd160');
 var Base58Check = require('bs58check')
+var Reverse = require("buffer-reverse")
 
-const PORT=25698;
-const COINNET='TESTNET'; // TESTNET or MAINNET
+
+const PORT = 25698;
+const WARNFEE = 10000; // satoshis TODO update
+const SAT2BTC = 100000000; // conversion
+const COINNET = 'livenet';
+//const COINNET = 'testnet';
+
+const DBB_COLOR_SAFE = "#0C0",
+      DBB_COLOR_WARN = "#880",
+      DBB_COLOR_DANGER = "#C00",
+      DBB_COLOR_BLACK = "#000";
+    
+const OP_CHECKMULTISIG = 'ae',
+      OP_1 = '51';
+
 
 var ws = null,
     wsIp = null,
@@ -47,6 +61,7 @@ var pairIcon,
     pwText,
     ipText,
     clearButton,
+    detailsButton,
     pairBeginButton,
     pairCancelButton,
     pairManualButton,
@@ -56,15 +71,16 @@ var pairIcon,
     infoTextDiv,
     pairStrengthDiv;
 
-var ecdh,
-    ecdh_secret,
-    ecdh_pubkey, 
+var ecdh = Crypto.createECDH('secp256k1'),
     blinkcode = [],
+    ipFile = null,
     keyFile = null,
+    ip_saved = "",
     key;
 
-ecdh = Crypto.createECDH('secp256k1');
-
+var inputAddresses = [];
+var res_detail = '';
+        
 
 
 // ----------------------------------------------------------------------------
@@ -83,6 +99,7 @@ function init()
     document.querySelector("#submitIpButton").addEventListener("touchstart", setIP, false);
     document.querySelector("#forgetpwButton").addEventListener("touchstart", forget, false);
     document.querySelector("#settingsIcon").addEventListener("touchstart", displaySettings, false);
+    document.querySelector("#detailsButton").addEventListener("touchstart", details, false);
     document.querySelector("#pairOptionButton").addEventListener("touchstart", pairEnter, false);
     document.querySelector("#pairBeginButton").addEventListener("touchstart", pairPc, false);
     document.querySelector("#pairCancelButton").addEventListener("touchstart", cancelClear, false);
@@ -108,6 +125,7 @@ function init()
     pairDialog = document.getElementById("pairDialog");
 	infoTextDiv = document.querySelector("#infoText");
     clearButton = document.getElementById("clearButton");
+    detailsButton = document.getElementById("detailsButton");
     pairBeginButton = document.getElementById("pairBeginButton");
     pairCancelButton = document.getElementById("pairCancelButton");
     pairManualButton = document.getElementById("pairManualButton");
@@ -115,7 +133,7 @@ function init()
     optionButtons = document.getElementById("optionButtons");
     scanButton = document.getElementById("scanButton");
 
-    openFile();
+    loadFiles();
     setInterval(wsFind, wsPollInterval);
 }
 
@@ -159,8 +177,7 @@ function wsStart() {
 
         ws.onmessage = function (event) {
             console.log('WebSocket received: ', event.data);
-            infoTextDiv.innerHTML = parseData(event.data);
-            showInfoDialog();
+            parseData(event.data);
         };
 
         ws.onerror = function () {
@@ -176,6 +193,7 @@ function wsStart() {
     }
 };
 
+
 function wsSend(message) {
     if(ws) {
         if(ws.readyState == ws.OPEN) {
@@ -183,7 +201,6 @@ function wsSend(message) {
         }
     }
 }
-
 
 
 function wsFind() {
@@ -198,12 +215,14 @@ function wsFind() {
     }
 }
 
+
 function wsFound(obj) {
     wsAddr = 'ws://' + obj.service.addresses[0] + ':' + obj.service.port;
     //wsAddr = 'ws://' + obj.service.server + ':' + obj.service.port;
     wsName = obj.service.name;
     wsStart();
 }
+
 
 //function mdnsAdvertise() {
     //const PORT = 25698;
@@ -215,11 +234,13 @@ function wsFound(obj) {
 // General UI
 //
 
-function showInfoDialog() {
+function showInfoDialog(text) {
+    infoTextDiv.innerHTML = text;
     hideOptionButtons();
     hidePairDialog();
     pwDialog.style.display = "none";
     ipDialog.style.display = "none";
+    detailsButton.style.display = "none";
     clearButton.style.display = "inline";
 }
 
@@ -256,6 +277,7 @@ function showIpDialog() {
     hideOptionButtons();
     settingsIcon.style.visibility = "hidden";
     ipDialog.style.display = "block";
+    ipText.value = ip_saved;
 }
 
 
@@ -320,13 +342,13 @@ function blinkCodeStrength() {
         pairStrengthDiv.innerHTML = "";
     } else if (blinkcode.length < 3) {
         pairStrengthDiv.innerHTML = "Low strength";
-        pairStrengthDiv.style.color = "#C00";
+        pairStrengthDiv.style.color = DBB_COLOR_DANGER;
     } else if (blinkcode.length < 5) {
         pairStrengthDiv.innerHTML = "Medium strength";
-        pairStrengthDiv.style.color = "#880";
+        pairStrengthDiv.style.color = DBB_COLOR_WARN;
     } else if (blinkcode.length > 6) {
         pairStrengthDiv.innerHTML = 'When ready to end:<br>Tap the touch button on the Digital Bitbox.</pre>';
-        pairStrengthDiv.style.color = "#000";
+        pairStrengthDiv.style.color = DBB_COLOR_BLACK;
     } else {
         pairStrengthDiv.innerHTML = "";
     }
@@ -373,8 +395,7 @@ function pairEnter() {
     }
     
     if (navigator.connection.type != Connection.WIFI) {
-        infoTextDiv.innerHTML = 'A WiFi connection is needed for pairing.';
-        showInfoDialog(); 
+        showInfoDialog('A WiFi connection is needed for pairing.'); 
     } else {
         showNoWSDialog();
     }
@@ -399,15 +420,16 @@ function pairManual() {
 
 function setIP() {
     wsIp = ipText.value;
-    cancelClear();   
+    ip_saved = ipText.value;
+    writeIp();
+    cancelClear();
 }
 
 function pairStatus() {
     if(clearButton.style.display == "inline"){
         cancelClear();
     } else {
-        infoTextDiv.innerHTML = 'Digital Bitbox PC app connect at:<br>' + wsAddr + '<br>' + wsName;
-        showInfoDialog(); 
+        showInfoDialog('Digital Bitbox PC app connect at:<br>' + wsAddr + '<br>' + wsName);
     }
 }
 
@@ -425,23 +447,20 @@ function setKey() {
 function forget() {
     wsIp = null;
     key = "";
+    ip_saved = "";
     writeKey();
+    writeIp();
     hideOptionButtons();
-    showInfoDialog();
-    infoTextDiv.innerHTML = "Settings erased";
+    showInfoDialog("Settings erased");
 }
 
 
 function saveKey() {
     try {
         key = pwText.value;
-        
         writeKey();
-        
         hidePasswordDialog();
-        showInfoDialog();
-        infoTextDiv.innerHTML = "Password set";
-    
+        showInfoDialog("Password set");
     }
     catch(err) {
         infoTextDiv.innerHTML = err.message;
@@ -454,19 +473,22 @@ function cancelClear() {
     hidePasswordDialog();
     hidePairDialog();
     hideIpDialog();
-    showInfoDialog();
-    infoTextDiv.innerHTML = "";
+    showInfoDialog("");
     clearButton.style.display = "none";
     scanButton.style.display = "none";
 }
 
 
-function openFile() {
+function loadFiles() {
 	try {
         window.resolveLocalFileSystemURL(cordova.file.dataDirectory, function(dir) {
 		    dir.getFile("keyfile.txt", {create:true}, function(file) {
 			    keyFile = file;
 		        readKey(); 
+            })
+            dir.getFile("ipfile.txt", {create:true}, function(file) {
+			    ipFile = file;
+		        readIp(); 
             })
 	    })
     }
@@ -512,6 +534,50 @@ function writeKey() {
 }
 
 
+function readIp() {
+    try {    
+        ipFile.file(function(file) {
+            var reader = new FileReader();
+            reader.onloadend = function(e) {
+                ip_saved = e.target.result;
+            }
+            reader.readAsText(file);
+        })
+        return ip_saved; 
+    }
+    catch(err) {
+        infoTextDiv.innerHTML = err.message;
+        console.log(err.message);
+        return null;
+    }
+}
+
+
+function writeIp() {
+	try {
+        if(!ipFile) return;
+        ipFile.createWriter(function(fileWriter) {
+            //fileWriter.seek(fileWriter.length); // append
+            var blob = new Blob([ip_saved], {type:"text/plain"});
+            fileWriter.write(blob);
+        })
+    }
+    catch(err) {
+        infoTextDiv.innerHTML = err.message;
+        console.log(err.message);
+    }
+}
+
+
+// ----------------------------------------------------------------------------
+// Scan UI
+// 
+
+function details()
+{
+    showInfoDialog("<pre>" + res_detail + "</pre>");
+}
+
 // ----------------------------------------------------------------------------
 // Scan UI
 // 
@@ -522,8 +588,7 @@ function startScan()
     cordova.plugins.barcodeScanner.scan(
 		function (result)
         {
-            infoTextDiv.innerHTML = parseData(aes_cbc_b64_decrypt(result.text));
-            showInfoDialog();
+            parseData(aes_cbc_b64_decrypt(result.text));
         }, 
 		function (error) {
 			console.log("Scanning failed: " + error);
@@ -539,7 +604,7 @@ function startScan()
 
 
 // ----------------------------------------------------------------------------
-// Parsing JSON and crypto ops
+// Crypto
 // 
 
 function aes_cbc_b64_decrypt(ciphertext)
@@ -557,7 +622,6 @@ function aes_cbc_b64_decrypt(ciphertext)
     catch(err) {
         console.log(err);
         res = ciphertext;
-        //return err.message;
     }
     
     return res;
@@ -575,7 +639,6 @@ function aes_cbc_b64_encrypt(plaintext)
     }
     catch(err) {
         console.log(err);
-        //return err.message;
     }
 }
 
@@ -588,13 +651,246 @@ function ecdhPubkey() {
 }    
 
 
+function multisigHash(script) {
+    var hash = Crypto.createHash('sha256')
+               .update(new Buffer(script, 'hex'))
+               .digest();
+    hash = Ripemd160(hash);
+    if (COINNET === 'livenet') {
+        hash = Base58Check.encode(new Buffer('05' + hash.toString('hex'), 'hex'));
+    } else if (COINNET === 'testnet') {
+        hash = Base58Check.encode(new Buffer('c4' + hash.toString('hex'), 'hex'));
+    } else {
+        hash = 0;
+    }
+    return hash;
+}
+
+
+function multisig1of1(publickey) {
+    var pushbytes = (publickey.length  / 2).toString(16);
+    var script = OP_1 + pushbytes + publickey + OP_1 + OP_CHECKMULTISIG;
+    return multisigHash(script);
+}
+
+
+function getInputs(transaction, sign) {
+    var blockWorker = new Worker("js/blockWorker.js");
+    inputAddresses = [];
+    for (var i = 0; i < transaction.inputs.length; i++) {
+        var script = transaction.inputs[i].script;
+            script = script.chunks[script.chunks.length - 1].buf;
+        var addr = multisigHash(script);
+        blockWorker.postMessage("https://blockexplorer.com/api/addr/" + addr + "/balance");
+        blockWorker.postMessage("https://insight.bitpay.com/api/addr/" + addr + "/balance");
+        blockWorker.postMessage("https://blockchain.info/q/addressbalance/" + addr);
+        blockWorker.onmessage = function(e) {
+            var url = e.data[1].split('/');
+            var address;
+            for (var i = 0; i < url.length; i++) {
+                if (url[i].length === 34)
+                    address = url[i]; 
+            }
+           
+            for (var i = 0; i < inputAddresses.length; i++) {
+                // skip if already got the balance 
+                if (address === inputAddresses[i].address)
+                    return;
+            }
+                    
+            var input = {};
+            input.address = address;
+            input.balance = e.data[0];
+            inputAddresses.push(input);
+            
+            if (inputAddresses.length === transaction.inputs.length) {
+                blockWorker.terminate();
+                console.log('Got all address balances.', inputAddresses.length);
+                process_verify_transaction(transaction, sign);
+            }
+        };
+    }
+}
+
+
+
+// ----------------------------------------------------------------------------
+// Parse input
+// 
+
+function process_verify_transaction(transaction, sign) 
+{    
+    var res_short = '',
+        total_in = 0, 
+        total_out = 0,
+        err = '',
+        res = '';
+
+    res_detail = '';
+
+    // Get outputs and amounts
+    res_detail += "\nOutputs:\n";
+    for (var i = 0; i < transaction.outputs.length; i++) {
+        var address, amount, present;
+        address = transaction.outputs[i].script
+            .toAddress(COINNET).toString();
+
+        amount = transaction.outputs[i].satoshis;
+        total_out += amount / SAT2BTC;
+
+        // Check if the output address is a change address
+        present = false;
+        for (var j = 0; j < sign.checkpub.length; j++) {
+            var pubk = sign.checkpub[j].pubkey; 
+            var checkaddress = multisig1of1(pubk);
+            if (checkaddress === address) {
+                present = sign.checkpub[j].present; 
+            }
+        }
+        
+        if (!present || transaction.outputs.length == 1) {
+            res = address + "  " + amount / SAT2BTC + " BTC\n";
+            res_detail += '<span style="color: ' + DBB_COLOR_WARN + ';">' + res + '</span>';
+            res_short += amount / SAT2BTC + " BTC\n" + address + "\n\n";
+        } else {
+            res = address + "  " + amount / SAT2BTC + " BTC (change address)\n";
+            res_detail += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '</span>';
+        }
+    }
+
+    if (res_short == "")
+        res_short = "\nMoving:\n\n" + total_out + " BTC\n(internally)\n\n";
+    else
+        res_short = "\nSending:\n\n" + res_short;
+       
+
+    // Get input addresses and balances
+    res_detail += "\nInputs:\n";
+    for (var i = 0; i < inputAddresses.length; i++) {
+        var address = inputAddresses[i].address;
+        var balance = inputAddresses[i].balance;
+        res = address + "  " + balance / SAT2BTC + " BTC\n";
+        res_detail += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '</span>';
+        total_in += balance / SAT2BTC;
+    }
+
+
+    // Calculate fee (inputs - outputs)
+    res_detail += '\nFee:\n';
+    res = (total_in - total_out).toFixed(8) + ' BTC\n';
+    if ((total_in - total_out) > WARNFEE) {
+        var errmsg = 'WARNING: High fee!';
+        err += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + errmsg + '<br><br></span>';
+        res_detail += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '/span>';
+    } else {
+        res_detail += '<span style="color: ' + DBB_COLOR_WARN + ';">' + res + '</span>';
+    }
+    
+    res = "\nFee: " + (total_in - total_out).toFixed(8) + " BTC\n\n";
+    if ((total_in - total_out) > WARNFEE) {
+        res_short += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '<br><br></span>';
+    } else {
+        res_short += '<span style="color: ' + DBB_COLOR_BLACK + ';">' + res + '<br><br></span>';
+    }
+            
+    if (typeof sign.pin == "string")
+        res_short += "\n\nLock code:  " + sign.pin;
+
+    console.log(res_short);
+    showInfoDialog("<pre>" + res_short + "</pre>");
+    detailsButton.style.display = "inline";
+
+
+    // Verify that input hashes match meta utx
+    res_detail += "\nHashes:\n";
+    for (var j = 0; j < sign.data.length; j++) {
+        var present = false;
+        for (var i = 0; i < transaction.inputs.length; i++) {
+            var nhashtype = Bitcore.crypto.Signature.SIGHASH_ALL;
+            var script = transaction.inputs[i].script
+                script = script.chunks[script.chunks.length - 1].buf; // redeem script is 2nd to last chunk
+            
+            var sighash = Bitcore.Transaction.sighash
+                .sighash(transaction, nhashtype, i, script);
+           
+            if (sign.data[j].hash === Reverse(sighash).toString('hex'))
+                present = true; 
+        }
+
+        if (present === false) {
+            var errmsg = 'WARNING: Unknown data being signed!';
+            err += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + errmsg + '<br><br></span>';
+            res = "Unknown: " + sign.data[j].hash;
+            res_detail += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '</span>';
+        } else {
+            res = sign.data[j].hash;
+            res_detail += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '</span>';
+        }
+    }
+
+    if (typeof sign.pin == "string")
+        res_detail += "\nLock code:  " + sign.pin;
+    
+    // Extra information
+    console.log("2FA message received:\n" + JSON.stringify(sign, undefined, 4));
+    console.log(res_detail);
+    console.log(err);
+            
+    if (err != '')
+        showInfoDialog("<pre>" + err + res_detail + "</pre>");
+        
+}
+
+
+function process_2FA_pairing(parse) 
+{    
+    var ciphertext = parse.verifypass.ciphertext;
+    var pubkey = parse.verifypass.ecdh;
+    var ecdh_secret = ecdh.computeSecret(pubkey, 'hex', 'hex');
+    
+    key = Crypto.createHash('sha256').update(new Buffer(ecdh_secret, 'hex')).digest('hex');
+    key = Crypto.createHash('sha256').update(new Buffer(key, 'hex')).digest('hex');
+    var k = new Buffer(key, "hex");
+    for (var i = 0; i < blinkcode.length; i++) {
+        k[i % 32] ^= blinkcode[i]; 
+    }
+    key = k.toString('hex');
+    key = Crypto.createHash('sha256').update(new Buffer(key, 'ascii')).digest('hex');
+    key = Crypto.createHash('sha256').update(new Buffer(key, 'hex')).digest('hex');
+
+    writeKey();
+    
+    if (aes_cbc_b64_decrypt(ciphertext) === 'Digital Bitbox 2FA')
+        parse = "Successfully paired.";
+    else 
+        parse = "Pairing failed!";
+    
+    return parse;
+}
+  
+
+function process_verify_address(plaintext, parse) 
+{    
+    if (!(parse.xpub === plaintext)) {
+        return 'Error: Addresses do not match!';
+    } else {
+        parse = Base58Check.decode(plaintext).slice(-33).toString('hex');
+        parse = multisig1of1(parse);
+        if (!parse) {
+            return 'Error: Coin network not defined.';
+        }
+        return "<pre>Receiving address:\n\n" + parse + "\n\n</pre>";
+    }
+}
+
+
 function parseData(data)
 {
     var parse;
     
     try {
         parse = JSON.parse(data);
-                
+
         if (typeof parse.verify_output == "object") {
             // QR scan
             // If crypto-currency 'ouputs', cleanly print result
@@ -602,92 +898,56 @@ function parseData(data)
             for (var i = 0; i < parse.verify_output.length; i++) {
                 var s;
                 s = new Buffer(parse.verify_output[i].script, "hex");
-                s = new Script(s);
-                s = s.toAddress("livenet").toString();
-                pptmp += parse.verify_output[i].value / 100000000 + " BTC\n" + s + "\n\n";
+                s = new Bitcore.Script(s);
+                s = s.toAddress(COINNET).toString();
+                pptmp += parse.verify_output[i].value / SAT2BTC + " BTC\n" + s + "\n\n";
             }
             if (typeof parse.pin == "string") {
                 pptmp += "\nLock code:  " + parse.pin;
             }
-            parse = "<pre>" + pptmp + "</pre>";
+            showInfoDialog("<pre>" + pptmp + "</pre>");
         }
         else if (typeof parse.verifypass == "object") {
-            // 2FA - PC pairing
-            var ciphertext = parse.verifypass.ciphertext;
-            var pubkey = parse.verifypass.ecdh;
-            ecdh_secret = ecdh.computeSecret(pubkey, 'hex', 'hex');
-            
-            key = Crypto.createHash('sha256').update(new Buffer(ecdh_secret, 'hex')).digest('hex');
-            key = Crypto.createHash('sha256').update(new Buffer(key, 'hex')).digest('hex');
-            var k = new Buffer(key, "hex");
-            for (var i = 0; i < blinkcode.length; i++) {
-                k[i % 32] ^= blinkcode[i]; 
-            }
-            key = k.toString('hex');
-            key = Crypto.createHash('sha256').update(new Buffer(key, 'ascii')).digest('hex');
-            key = Crypto.createHash('sha256').update(new Buffer(key, 'hex')).digest('hex');
-
-            writeKey();
-            var message = aes_cbc_b64_decrypt(ciphertext);
-            console.log(blinkcode);
-            console.log('ecdh check message: ', message);
-            
-            if (message === 'Digital Bitbox 2FA')
-                parse = "Successfully paired.";
-            else 
-                parse = "Pairing failed!";
+            showInfoDialog(process_2FA_pairing(parse));
         } 
         else if (typeof parse.echo == "string") {
             // Echo verification
-            console.log('Echo');
             var ciphertext = parse.echo;
-            plaintext = aes_cbc_b64_decrypt(ciphertext);
-       
+            var plaintext = aes_cbc_b64_decrypt(ciphertext);
+            
             if (plaintext === ciphertext) {
-                parse = 'Could not parse:<br><br>' + JSON.stringify(plaintext, undefined, 4);
+                showInfoDialog('Could not parse:<br><br>' + JSON.stringify(plaintext, undefined, 4));
             }
+            
             if (plaintext.slice(0,4).localeCompare('xpub') == 0) {
-                // Recreate receiving address from xpub
-                var xpub = parse.xpub;
-                if (!(xpub === plaintext)) {
-                    parse = "Error: Addresses do not match!";
-                } else {
-                    parse = Base58Check.decode(plaintext).slice(-33).toString('hex');
-                    parse = '51' + '21' + parse + '51' + 'ae'; // 51 ... 51 = 1 of 1 multisig
-                                                               // 21 = number of bytes to push for a compressed pubkey
-                                                               // ae = op check multisig
-                    parse = Crypto.createHash('sha256').update(new Buffer(parse, 'hex')).digest();
-                    parse = Ripemd160(parse);
-                    var header = 'Receiving address:\n\n';
-                    if (COINNET === 'MAINNET') {
-                        parse = Base58Check.encode(new Buffer('05' + parse.toString('hex'), 'hex'));
-                    } else if (COINNET === 'TESTNET') {
-                        parse = Base58Check.encode(new Buffer('c4' + parse.toString('hex'), 'hex'));
-                    } else {
-                        header = '';
-                        parse = 'Error: Coin network not defined.';
-                    }
-                    parse = "<pre>" + header + parse + "\n\n</pre>";
-                }
+                showInfoDialog(process_verify_address(plaintext, parse));
+            }
+            else if (typeof JSON.parse(plaintext).sign == "object") {
+                var sign = JSON.parse(plaintext).sign;
+                var transaction = new Bitcore.Transaction(sign.meta);
+                if (typeof JSON.parse(plaintext).pin == "string")
+                    sign.pin = JSON.parse(plaintext).pin;
+                    
+                getInputs(transaction, sign);
+                
+            } else {
+                showInfoDialog('No operation for:<br><br>' + JSON.stringify(parse, undefined, 4));
             }
         }
         else {
-            parse = 'Could not parse:<br><br>' + JSON.stringify(parse, undefined, 4);
+            showInfoDialog('Could not parse:<br><br>' + JSON.stringify(parse, undefined, 4));
             console.log('Could not parse data.');
         }
     
     }
     catch(err) {
         console.log(err);
-        parse = "Unknown error. Data received was:<br><br>" + data;
+        showInfoDialog("Unknown error. Data received was:<br><br>" + data);
     }
 
-    if (parse == "") {
-        parse = "--";
-    }
+    if (parse == "")
+        showInfoDialog("--");
 
-    return parse;
 }
 
-   
 
