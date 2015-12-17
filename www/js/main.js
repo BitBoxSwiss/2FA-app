@@ -78,8 +78,9 @@ var ecdh = Crypto.createECDH('secp256k1'),
     ip_saved = "",
     key;
 
-var inputAddresses = [];
-var res_detail = '';
+var QRtext = [],
+    inputAddresses = [],
+    res_detail = '';
         
 
 
@@ -886,33 +887,42 @@ function process_verify_address(plaintext, parse)
 
 function parseData(data)
 {
-    var parse;
-    
     try {
-        parse = JSON.parse(data);
+        
+        if (data.slice(0,2).localeCompare('QS') == 0) {
+            var seqNumber = data[2];
+            var seqTotal = data[3];
+            QRtext[seqNumber] = data.substring(4);
+            console.log('QRtext', QRtext); 
 
-        if (typeof parse.verify_output == "object") {
-            // QR scan
-            // If crypto-currency 'ouputs', cleanly print result
-            var pptmp = "Sending:\n\n";
-            for (var i = 0; i < parse.verify_output.length; i++) {
-                var s;
-                s = new Buffer(parse.verify_output[i].script, "hex");
-                s = new Bitcore.Script(s);
-                s = s.toAddress(COINNET).toString();
-                pptmp += parse.verify_output[i].value / SAT2BTC + " BTC\n" + s + "\n\n";
+            if (QRtext.length != seqTotal) {
+                showInfoDialog('Scan next QR code');
+                startScan();
+                return; 
             }
-            if (typeof parse.pin == "string") {
-                pptmp += "\nLock code:  " + parse.pin;
+                
+            for (var i = 0; i < seqTotal; i++) {
+                if (QRtext[i] === undefined) {
+                    showInfoDialog('Scan next QR code');
+                    startScan();
+                    return; 
+                }
             }
-            showInfoDialog("<pre>" + pptmp + "</pre>");
+            
+            data = QRtext.join('');
+            QRtext = [];
         }
-        else if (typeof parse.verifypass == "object") {
-            showInfoDialog(process_2FA_pairing(parse));
+
+        
+        data = JSON.parse(data);
+
+
+        if (typeof data.verifypass == "object") {
+            showInfoDialog(process_2FA_pairing(data));
         } 
-        else if (typeof parse.echo == "string") {
+        else if (typeof data.echo == "string") {
             // Echo verification
-            var ciphertext = parse.echo;
+            var ciphertext = data.echo;
             var plaintext = aes_cbc_b64_decrypt(ciphertext);
             
             if (plaintext === ciphertext) {
@@ -920,10 +930,10 @@ function parseData(data)
             }
             
             if (plaintext.slice(0,4).localeCompare('xpub') == 0) {
-                showInfoDialog(process_verify_address(plaintext, parse));
+                showInfoDialog(process_verify_address(plaintext, data));
             }
             else if (typeof JSON.parse(plaintext).sign == "object") {
-                var sign = JSON.parse(plaintext).sign;
+                var sign = JSON.data(plaintext).sign;
                 var transaction = new Bitcore.Transaction(sign.meta);
                 if (typeof JSON.parse(plaintext).pin == "string")
                     sign.pin = JSON.parse(plaintext).pin;
@@ -931,21 +941,22 @@ function parseData(data)
                 getInputs(transaction, sign);
                 
             } else {
-                showInfoDialog('No operation for:<br><br>' + JSON.stringify(parse, undefined, 4));
+                showInfoDialog('No operation for:<br><br>' + JSON.stringify(data, undefined, 4));
             }
         }
         else {
-            showInfoDialog('Could not parse:<br><br>' + JSON.stringify(parse, undefined, 4));
+            showInfoDialog('Could not parse:<br><br>' + JSON.stringify(data, undefined, 4));
             console.log('Could not parse data.');
         }
     
     }
     catch(err) {
         console.log(err);
-        showInfoDialog("Unknown error. Data received was:<br><br>" + data);
+        //showInfoDialog("Unknown error. Data received was:<br><br>" + data);
+        showInfoDialog(data);
     }
 
-    if (parse == "")
+    if (data == "")
         showInfoDialog("--");
 
 }
