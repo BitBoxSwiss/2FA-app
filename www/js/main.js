@@ -64,7 +64,8 @@ var pairIcon,
     detailsButton,
     pairBeginButton,
     pairCancelButton,
-    pairManualButton,
+    connectOptionButtons,
+    scanIpButton,
     settingsIcon,
     optionButtons,
     scanButton, 
@@ -105,6 +106,7 @@ function init()
     document.querySelector("#pairBeginButton").addEventListener("touchstart", pairPc, false);
     document.querySelector("#pairCancelButton").addEventListener("touchstart", cancelClear, false);
     document.querySelector("#pairManualButton").addEventListener("touchstart", pairManual, false);
+    document.querySelector("#scanIpButton").addEventListener("touchstart", startScan, false);
     document.querySelector("#pairIcon").addEventListener("touchstart", pairStatus, false);
     document.querySelector("#showScanButton").addEventListener("touchstart", startScan, false);
     //document.querySelector("#showScanButton").addEventListener("touchstart", showScanButton, false);
@@ -129,7 +131,8 @@ function init()
     detailsButton = document.getElementById("detailsButton");
     pairBeginButton = document.getElementById("pairBeginButton");
     pairCancelButton = document.getElementById("pairCancelButton");
-    pairManualButton = document.getElementById("pairManualButton");
+    connectOptionButtons = document.getElementById("connectOptionButtons");
+    scanIpButton = document.getElementById("scanIpButton");
     settingsIcon = document.getElementById("settingsIcon");
     optionButtons = document.getElementById("optionButtons");
     scanButton = document.getElementById("scanButton");
@@ -265,7 +268,7 @@ function hidePairDialog() {
 
 function showNoWSDialog() {
     infoTextDiv.innerHTML = 'Cannot find the Digital Bitbox PC app.';
-    pairManualButton.style.display = "inline";
+    connectOptionButtons.style.display = "inline";
     clearButton.style.display = "inline";
     settingsIcon.style.visibility = "hidden";
     hideOptionButtons();
@@ -283,7 +286,7 @@ function showIpDialog() {
 
 
 function hideIpDialog() {
-    pairManualButton.style.display = "none";
+    connectOptionButtons.style.display = "none";
     settingsIcon.style.visibility = "visible";
     ipDialog.style.display = "none";
     ipText.value = "";
@@ -571,7 +574,7 @@ function writeIp() {
 
 
 // ----------------------------------------------------------------------------
-// Scan UI
+// Transaction UI
 // 
 
 function details()
@@ -579,17 +582,19 @@ function details()
     showInfoDialog("<pre>" + res_detail + "</pre>");
 }
 
+
 // ----------------------------------------------------------------------------
 // Scan UI
 // 
 
 function startScan()
 {
-	try {
+	cancelClear();
+    try {
     cordova.plugins.barcodeScanner.scan(
 		function (result)
         {
-            parseData(aes_cbc_b64_decrypt(result.text));
+            parseData(result.text);
         }, 
 		function (error) {
 			console.log("Scanning failed: " + error);
@@ -893,7 +898,6 @@ function parseData(data)
             var seqNumber = data[2];
             var seqTotal = data[3];
             QRtext[seqNumber] = data.substring(4);
-            console.log('QRtext', QRtext); 
 
             if (QRtext.length != seqTotal) {
                 showInfoDialog('Scan next QR code');
@@ -917,37 +921,49 @@ function parseData(data)
         data = JSON.parse(data);
 
 
+        if (typeof data.ip == "string") {
+            console.log('Setting websocket IP', data.ip);
+            ipText.value = data.ip;
+            setIP();
+            return;
+        } 
+        
         if (typeof data.verifypass == "object") {
             showInfoDialog(process_2FA_pairing(data));
+            return;
         } 
-        else if (typeof data.echo == "string") {
+
+        if (typeof data.echo == "string") {
             // Echo verification
             var ciphertext = data.echo;
             var plaintext = aes_cbc_b64_decrypt(ciphertext);
             
             if (plaintext === ciphertext) {
                 showInfoDialog('Could not parse:<br><br>' + JSON.stringify(plaintext, undefined, 4));
+                return; 
             }
             
             if (plaintext.slice(0,4).localeCompare('xpub') == 0) {
                 showInfoDialog(process_verify_address(plaintext, data));
+                return;
             }
-            else if (typeof JSON.parse(plaintext).sign == "object") {
-                var sign = JSON.data(plaintext).sign;
+            
+            if (typeof JSON.parse(plaintext).sign == "object") {
+                var sign = JSON.parse(plaintext).sign;
                 var transaction = new Bitcore.Transaction(sign.meta);
                 if (typeof JSON.parse(plaintext).pin == "string")
                     sign.pin = JSON.parse(plaintext).pin;
                     
                 getInputs(transaction, sign);
-                
-            } else {
-                showInfoDialog('No operation for:<br><br>' + JSON.stringify(data, undefined, 4));
+                return;
             }
+                
+            showInfoDialog('No operation for:<br><br>' + JSON.stringify(data, undefined, 4));
+            return;
         }
-        else {
-            showInfoDialog('Could not parse:<br><br>' + JSON.stringify(data, undefined, 4));
-            console.log('Could not parse data.');
-        }
+
+        showInfoDialog('Could not parse:<br><br>' + JSON.stringify(data, undefined, 4));
+        console.log('Could not parse data.');
     
     }
     catch(err) {
