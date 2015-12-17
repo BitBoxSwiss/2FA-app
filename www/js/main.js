@@ -207,16 +207,23 @@ function wsSend(message) {
 }
 
 
+var alternate = 0;
 function wsFind() {
     if (wsIp) {
         wsAddr = 'ws://' + wsIp + ':' + PORT;
         wsName = 'Manually entered';
-        wsStart();
-    } else if (navigator.connection.type === Connection.WIFI) {
-        ZeroConf.watch("_dbb._tcp.local.", wsFound); // does not reconnect if turn off/on wifi
-    } else {
-        checkConnection();
+        if (alternate = !alternate) {
+            wsStart();
+            return;
+        }
     }
+
+    if (navigator.connection.type === Connection.WIFI) {
+        ZeroConf.watch("_dbb._tcp.local.", wsFound); // does not reconnect if turn off/on wifi
+        return;
+    }
+
+    checkConnection();
 }
 
 
