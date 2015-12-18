@@ -34,6 +34,7 @@ var Reverse = require("buffer-reverse")
 
 
 const PORT = 25698;
+const TIMEOUT = 1500; // ms
 const WARNFEE = 10000; // satoshis TODO update
 const SAT2BTC = 100000000; // conversion
 const COINNET = 'livenet';
@@ -932,15 +933,17 @@ function parseData(data)
             pair.QRtext[seqNumber] = data.substring(4);
 
             if (pair.QRtext.length != seqTotal) {
-                showInfoDialog('Scan next QR code');
-                startScan();
+                showInfoDialog('continue scanning');
+                ui.clearButton.style.display = "none";
+                setTimeout(startScan, TIMEOUT);
                 return; 
             }
             
             for (var i = 0; i < seqTotal; i++) {
                 if (pair.QRtext[i] === undefined) {
-                    showInfoDialog('Scan next QR code');
-                    startScan();
+                    showInfoDialog('continue scanning');
+                    ui.clearButton.style.display = "none";
+                    setTimeout(startScan, TIMEOUT);
                     return; 
                 }
             }
