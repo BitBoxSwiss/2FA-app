@@ -542,7 +542,6 @@ function writeKey() {
 	try {
         if(!pair.keyFile) return;
         pair.keyFile.createWriter(function(fileWriter) {
-            //fileWriter.seek(fileWriter.length); // append
             var blob = new Blob([pair.key], {type:"text/plain"});
             fileWriter.write(blob);
         })
@@ -577,7 +576,6 @@ function writeIp() {
 	try {
         if(!pair.ipFile) return;
         pair.ipFile.createWriter(function(fileWriter) {
-            //fileWriter.seek(fileWriter.length); // append
             var blob = new Blob([pair.ip_saved], {type:"text/plain"});
             fileWriter.write(blob);
         })
@@ -891,18 +889,14 @@ function process_2FA_pairing(parse)
 }
   
 
-function process_verify_address(plaintext, parse) 
+function process_verify_address(plaintext) 
 {    
-    if (!(parse.xpub === plaintext)) {
-        return 'Error: Addresses do not match!';
-    } else {
-        parse = Base58Check.decode(plaintext).slice(-33).toString('hex');
-        parse = multisig1of1(parse);
-        if (!parse) {
-            return 'Error: Coin network not defined.';
-        }
-        return "<pre>Receiving address:\n\n" + parse + "\n\n</pre>";
+    var parse = Base58Check.decode(plaintext).slice(-33).toString('hex');
+    parse = multisig1of1(parse);
+    if (!parse) {
+        return 'Error: Coin network not defined.';
     }
+    return "<pre>Receiving address:\n\n" + parse + "\n\n</pre>";
 }
 
 
@@ -920,7 +914,7 @@ function parseData(data)
                 startScan();
                 return; 
             }
-                
+            
             for (var i = 0; i < seqTotal; i++) {
                 if (pair.QRtext[i] === undefined) {
                     showInfoDialog('Scan next QR code');
@@ -960,7 +954,7 @@ function parseData(data)
             }
             
             if (plaintext.slice(0,4).localeCompare('xpub') == 0) {
-                showInfoDialog(process_verify_address(plaintext, data));
+                showInfoDialog(process_verify_address(plaintext));
                 return;
             }
             
@@ -984,7 +978,6 @@ function parseData(data)
     }
     catch(err) {
         console.log(err);
-        //showInfoDialog("Unknown error. Data received was:<br><br>" + data);
         showInfoDialog(data);
     }
 
