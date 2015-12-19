@@ -603,6 +603,7 @@ function readIp() {
             var reader = new FileReader();
             reader.onloadend = function(e) {
                 pair.ip_saved = e.target.result;
+                ws_opt.IP = e.target.result;
             }
             reader.readAsText(file);
         })
