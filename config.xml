@@ -15,13 +15,30 @@
     <preference name="DisallowOverscroll" value="true" />
     <preference name="AndroidPersistentFileLocation" value="Internal" />
     <preference name="iosPersistentFileLocation" value="Library" />
+    
     <icon src="www/img/icons/logo_circle_bg.png" />
+    <preference name="SplashScreen" value="screen" />
+    <preference name="SplashScreenDelay" value="5000" />
+    <preference name="AutoHideSplashScreen" value="true" />
+    <preference name="SplashMaintainAspectRatio" value="true" />
+    <preference name="FadeSplashScreen" value="false"/>
+    <preference name="ShowSplashScreenSpinner" value="false"/>
+    
     <platform name="android">
         <icon density="ldpi" src="www/img/icons/logo-android-round/drawable-ldpi/ic_launcher.png" />
         <icon density="mdpi" src="www/img/icons/logo-android-round/drawable-mdpi/ic_launcher.png" />
         <icon density="hdpi" src="www/img/icons/logo-android-round/drawable-hdpi/ic_launcher.png" />
         <icon density="xhdpi" src="www/img/icons/logo-android-round/drawable-xhdpi/ic_launcher.png" />
+        <splash src="www/img/splash.png" density="port-ldpi"/>
+        <splash src="www/img/splash.png" density="port-mdpi"/>
+        <splash src="www/img/splash.png" density="port-hdpi"/>
+        <splash src="www/img/splash.png" density="port-xhdpi"/>
+        <splash src="www/img/splash.png" density="land-ldpi"/>
+        <splash src="www/img/splash.png" density="land-mdpi"/>
+        <splash src="www/img/splash.png" density="land-hdpi"/>
+        <splash src="www/img/splash.png" density="land-xhdpi"/> 
     </platform>
+    
     <platform name="ios">
         <icon height="180" src="www/img/icons/logo-square-ios/AppIcon.appiconset/Icon-60@3x.png" width="180" />
         <icon height="60" src="www/img/icons/logo-square-ios/Icon-60.png" width="60" />
@@ -38,6 +55,17 @@
         <icon height="58" src="www/img/icons/logo-square-ios/AppIcon.appiconset/Icon-Small@2x.png" width="58" />
         <icon height="50" src="www/img/icons/logo-square-ios/Icon-Small-50.png" width="50" />
         <icon height="100" src="www/img/icons/logo-square-ios/Icon-Small-50@2x.png" width="100" />
+        <!-- TODO - - not tested -->
+        <splash src="www/img/splash.png" width="320" height="480"/>
+        <splash src="www/img/splash.png" width="640" height="960"/>
+        <splash src="www/img/splash.png" width="768" height="1024"/>
+        <splash src="www/img/splash.png" width="1536" height="2048"/>
+        <splash src="www/img/splash.png" width="1024" height="768"/>
+        <splash src="www/img/splash.png" width="2048" height="1536"/>
+        <splash src="www/img/splash.png" width="640" height="1136"/>
+        <splash src="www/img/splash.png" width="750" height="1334"/>
+        <splash src="www/img/splash.png" width="1242" height="2208"/>
+        <splash src="www/img/splash.png" width="2208" height="1242"/>
     </platform>
     <preference name="xwalkVersion" value="15+" />
     <preference name="xwalkCommandLine" value="--disable-pull-to-refresh-effect" />

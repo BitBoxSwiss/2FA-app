@@ -76,6 +76,18 @@ pre {
     zoom: 1;
 }
 
+#splash-screen {
+    background-attachment: fixed;
+    background-color: #000000; 
+    background-image: url(../img/splash.png);
+    background-position: center center;
+    background-size: cover;
+    height: 100%;
+    width: 100%;
+    position: fixed;
+    z-index: 10;
+}
+
 .infoText {
     padding: 0px 20px 0px 20px;
 }
