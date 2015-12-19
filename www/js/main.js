@@ -89,6 +89,7 @@ var ui = {
     showScanButton: null,
     scanButton: null, 
     infoText: null,
+    splashScreen: null,
 };
 
 var ecdh = Crypto.createECDH('secp256k1');
@@ -114,6 +115,7 @@ document.addEventListener("deviceready", init, false);
 
 function init()
 {
+    
     for (var u in ui) {
       var id = u.replace(/([A-Z])/g, '-$1').toLowerCase();
       var element = document.getElementById(id);
@@ -122,6 +124,9 @@ function init()
       }
       ui[u] = element;
     }
+    
+    navigator.splashscreen.hide();
+    fade(ui.splashScreen); 
 	
     ui.clearButton.addEventListener("touchstart", cancelClear, false);
     ui.cancelButton.addEventListener("touchstart", cancelClear, false);
@@ -151,6 +156,20 @@ function init()
     
     loadFiles();
     setInterval(wsFind, ws_opt.pollinterval);
+}
+
+ 
+function fade(element) {
+    var op = 1;  // opaque
+    var timer = setInterval(function () {
+        if (op <= 0.01){
+            clearInterval(timer);
+            element.style.display = 'none';
+        }
+        element.style.opacity = op;
+        element.style.filter = 'alpha(opacity=' + op * 100 + ')';
+        op -= 0.05;
+    }, 20);
 }
 
 
