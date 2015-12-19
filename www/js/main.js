@@ -67,21 +67,22 @@ var ui = {
     cancelButton: null,
     cancelIpButton: null,
     detailsButton: null,
-    pairBeginButton: null,
-    pairCancelButton: null,
-    pairManualButton: null,
-    pairOptionButton: null,
-    pairStrength: null,
     blinkDelButton: null,
     blink1Button: null,
     blink2Button: null,
     blink3Button: null,
     blink4Button: null,
-    connectOptionButtons: null,
     forgetPwButton: null,
     submitPwButton: null,
     submitIpButton: null,
-    scanIpButton: null,
+    ipScanButton: null,
+    ipManualButton: null,
+    connectOptionButtons: null,
+    pairManualButton: null,
+    pairBeginButton: null,
+    pairCancelButton: null,
+    pairOptionButton: null,
+    pairStrength: null,
     settingsIcon: null,
     optionButtons: null,
     showScanButton: null,
@@ -134,7 +135,8 @@ function init()
     ui.pairBeginButton.addEventListener("touchstart", pairPc, false);
     ui.pairCancelButton.addEventListener("touchstart", cancelClear, false);
     ui.pairManualButton.addEventListener("touchstart", pairManual, false);
-    ui.scanIpButton.addEventListener("touchstart", startScan, false);
+    ui.ipManualButton.addEventListener("touchstart", ipManual, false);
+    ui.ipScanButton.addEventListener("touchstart", startScan, false);
     ui.pairIcon.addEventListener("touchstart", pairStatus, false);
     ui.showScanButton.addEventListener("touchstart", startScan, false);
     //ui.showScanButton.addEventListener("touchstart", showScanButton, false);
@@ -177,7 +179,7 @@ function checkConnection() {
 //
 
 function wsStart() {
-    if(!ws || ws.readyState == ws.CLOSED) {
+    if (!ws || ws.readyState == ws.CLOSED) {
         console.log('WebSocket found at ', ws_opt.address);
         
         ws = new WebSocket(ws_opt.address);
@@ -208,8 +210,8 @@ function wsStart() {
 
 
 function wsSend(message) {
-    if(ws) {
-        if(ws.readyState == ws.OPEN) {
+    if (ws) {
+        if (ws.readyState == ws.OPEN) {
             ws.send(message);
         }
     }
@@ -285,6 +287,7 @@ function hidePairDialog() {
 function showNoWSDialog() {
     ui.infoText.innerHTML = 'Cannot find the Digital Bitbox PC app.';
     ui.connectOptionButtons.style.display = "inline";
+    ui.pairManualButton.style.display = "inline";
     ui.clearButton.style.display = "inline";
     ui.settingsIcon.style.visibility = "hidden";
     hideOptionButtons();
@@ -303,6 +306,7 @@ function showIpDialog() {
 
 function hideIpDialog() {
     ui.connectOptionButtons.style.display = "none";
+    ui.pairManualButton.style.display = "none";
     ui.settingsIcon.style.visibility = "visible";
     ui.ipDialog.style.display = "none";
     ui.ipText.value = "";
@@ -344,7 +348,7 @@ function displaySettings() {
     
     wsSend('Touched settings button');
     
-    if(ui.optionButtons.style.display == "inline") {
+    if (ui.optionButtons.style.display == "inline") {
         hideOptionButtons();
     } else {
         showOptionButtons();
@@ -402,10 +406,9 @@ function blinkDel() {
 
 
 function pairEnter() {
-    if(ws) {
-        if(ws.readyState == ws.OPEN) {
-            hideOptionButtons();
-            ui.clearButton.style.display = "none" ;
+    if (ws) {
+        if (ws.readyState == ws.OPEN) {
+            cancelClear();
             ui.settingsIcon.style.visibility = "hidden";
             ui.pairBeginButton.style.display = "inline";
             ui.pairCancelButton.style.display = "inline";
@@ -415,7 +418,9 @@ function pairEnter() {
     }
     
     if (navigator.connection.type != Connection.WIFI) {
-        showInfoDialog('A WiFi connection is needed for pairing.'); 
+        showInfoDialog('A WiFi connection was not found.'); 
+        ui.pairManualButton.style.display = "inline";
+        ui.settingsIcon.style.visibility = "hidden";
     } else {
         showNoWSDialog();
     }
@@ -424,17 +429,36 @@ function pairEnter() {
 function pairPc() {
     ui.pairBeginButton.style.display = "none";
     ui.pairCancelButton.style.display = "none";
-    if(ws) {
-        if(ws.readyState == ws.OPEN) {
-            ecdhPubkey();
-            showPairDialog();
-            return; 
+    if (ws) {
+        if (ws.readyState == ws.OPEN) {
+            wsSend('{"ecdh":"' + ecdhPubkey() + '"}');
         }
     }
-    showNoWSDialog();
+    showPairDialog();
 }
 
 function pairManual() {
+    cancelClear();
+    ui.settingsIcon.style.visibility = "hidden";
+    ui.pairBeginButton.style.display = "inline";
+    ui.pairCancelButton.style.display = "inline";
+    
+    var pubkey = ecdhPubkey();
+        pubkey = Base58Check.encode(new Buffer(pubkey.toString('hex'), 'hex'));
+    
+    ui.infoText.innerHTML = 'Enter this in the PC app:<br><br>' +
+                            '<span style="color: ' + DBB_COLOR_WARN + ';">' +
+                            pubkey.slice(0, pubkey.length / 2) + '<br>' +
+                            pubkey.slice(pubkey.length / 2) + '</span>' +
+                            '<br><br><br>Then begin, and your Digital Bitbox will blink.<br><pre>' +
+                            '- Count the number of blinks in each set.\n' +
+                            '- Enter those numbers here.\n' +
+                            '- Tap the touch button on the Digital Bitbox to end.</pre>';
+    
+    wsSend('{"ecdh":"manual"}');
+}
+
+function ipManual() {
     showIpDialog();
 }
 
@@ -446,7 +470,7 @@ function setIP() {
 }
 
 function pairStatus() {
-    if(ui.clearButton.style.display == "inline"){
+    if (ui.clearButton.style.display == "inline"){
         cancelClear();
     } else {
         showInfoDialog('Digital Bitbox PC app connect at:<br>' + ws_opt.address + '<br>' + ws_opt.name);
@@ -540,7 +564,7 @@ function readKey() {
 
 function writeKey() {
 	try {
-        if(!pair.keyFile) return;
+        if (!pair.keyFile) return;
         pair.keyFile.createWriter(function(fileWriter) {
             var blob = new Blob([pair.key], {type:"text/plain"});
             fileWriter.write(blob);
@@ -574,7 +598,7 @@ function readIp() {
 
 function writeIp() {
 	try {
-        if(!pair.ipFile) return;
+        if (!pair.ipFile) return;
         pair.ipFile.createWriter(function(fileWriter) {
             var blob = new Blob([pair.ip_saved], {type:"text/plain"});
             fileWriter.write(blob);
@@ -665,9 +689,7 @@ function aes_cbc_b64_encrypt(plaintext)
 
 function ecdhPubkey() {
     ecdh.generateKeys();
-    var ecdh_pubkey = ecdh.getPublicKey('hex','compressed'); // 33 bytes
-    var msg = '{"ecdh":"' + ecdh_pubkey + '"}';
-    wsSend(msg);   
+    return ecdh.getPublicKey('hex','compressed'); // 33 bytes
 }    
 
 
