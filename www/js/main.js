@@ -73,7 +73,7 @@ var ui = {
     blink2Button: null,
     blink3Button: null,
     blink4Button: null,
-    forgetPwButton: null,
+    forgetButton: null,
     submitPwButton: null,
     submitIpButton: null,
     ipScanButton: null,
@@ -134,7 +134,7 @@ function init()
     //ui.changepwButton.addEventListener("touchstart", setKey, false);
     ui.submitPwButton.addEventListener("touchstart", saveKey, false);
     ui.submitIpButton.addEventListener("touchstart", setIP, false);
-    ui.forgetPwButton.addEventListener("touchstart", forget, false);
+    ui.forgetButton.addEventListener("touchstart", forget, false);
     ui.settingsIcon.addEventListener("touchstart", displaySettings, false);
     ui.detailsButton.addEventListener("touchstart", details, false);
     ui.pairOptionButton.addEventListener("touchstart", pairEnter, false);
@@ -509,6 +509,7 @@ function setKey() {
 
 
 function forget() {
+    ws.close();
     ws_opt.IP = null;
     pair.key = "";
     pair.ip_saved = "";
