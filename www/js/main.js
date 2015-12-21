@@ -33,20 +33,20 @@ var Base58Check = require('bs58check')
 var Reverse = require("buffer-reverse")
 
 
-const PORT = 25698;
-const TIMEOUT = 1500; // ms
-const WARNFEE = 10000; // satoshis TODO update
-const SAT2BTC = 100000000; // conversion
-const COINNET = 'livenet';
+var PORT = 25698;
+var TIMEOUT = 1500; // ms
+var WARNFEE = 10000; // satoshis TODO update
+var SAT2BTC = 100000000; // conversion
+var COINNET = 'livenet';
 //const COINNET = 'testnet';
 
-const DBB_COLOR_SAFE = "#0C0",
-      DBB_COLOR_WARN = "#880",
-      DBB_COLOR_DANGER = "#C00",
-      DBB_COLOR_BLACK = "#000";
+var DBB_COLOR_SAFE = "#0C0",
+    DBB_COLOR_WARN = "#880",
+    DBB_COLOR_DANGER = "#C00",
+    DBB_COLOR_BLACK = "#000";
     
-const OP_CHECKMULTISIG = 'ae',
-      OP_1 = '51';
+var OP_CHECKMULTISIG = 'ae',
+    OP_1 = '51';
 
 
 var ws = null;
@@ -125,7 +125,9 @@ function init()
       ui[u] = element;
     }
     
-    navigator.splashscreen.hide();
+    if (navigator && navigator.splashscreen)
+        navigator.splashscreen.hide();
+
     fade(ui.splashScreen); 
 	
     ui.clearButton.addEventListener("touchstart", cancelClear, false);
