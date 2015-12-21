@@ -38,7 +38,7 @@ var TIMEOUT = 1500; // ms
 var WARNFEE = 10000; // satoshis TODO update
 var SAT2BTC = 100000000; // conversion
 var COINNET = 'livenet';
-//const COINNET = 'testnet';
+//var COINNET = 'testnet';
 
 var DBB_COLOR_SAFE = "#0C0",
     DBB_COLOR_WARN = "#880",
@@ -242,20 +242,18 @@ function wsSend(message) {
 
 var alternate = 0;
 function wsFind() {
-    if (ws_opt.IP) {
-        ws_opt.address = 'ws://' + ws_opt.IP + ':' + PORT;
-        ws_opt.name = 'Manually entered';
-        if (alternate = !alternate) {
-            wsStart();
-            return;
-        }
-    }
-
     if (navigator.connection.type === Connection.WIFI) {
+        if (ws_opt.IP) {
+            ws_opt.address = 'ws://' + ws_opt.IP + ':' + PORT;
+            ws_opt.name = 'Manually entered';
+            if (alternate = !alternate) {
+                wsStart();
+                return;
+            }
+        }
         ZeroConf.watch("_dbb._tcp.local.", wsFound); // does not reconnect if turn off/on wifi
         return;
     }
-
     checkConnection();
 }
 
