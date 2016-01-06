@@ -27,7 +27,7 @@ cd digitalbitbox2FA
 cordova platform add android 
 cordova plugin add https://github.com/wildabeast/BarcodeScanner
 cordova plugin add cordova-plugin-file
-cordova plugin add cordova-zeroconf-plugin  #  mDNS (currently Android only)
+cordova plugin add https://github.com/digitalbitbox/ZeroConf
 cordova plugin add cordova-plugin-crosswalk-webview  #  supports websockets
 cordova plugin add cordova-plugin-network-information
 cordova plugin add cordova-plugin-whitelist
