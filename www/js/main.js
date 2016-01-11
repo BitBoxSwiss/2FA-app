@@ -715,6 +715,22 @@ function ecdhPubkey() {
 }    
 
 
+function p2pkHash(script) {
+    var hash = Crypto.createHash('sha256')
+               .update(new Buffer(script, 'hex'))
+               .digest();
+    hash = Ripemd160(hash);
+    if (COINNET === 'livenet') {
+        hash = Base58Check.encode(new Buffer('00' + hash.toString('hex'), 'hex'));
+    } else if (COINNET === 'testnet') {
+        hash = Base58Check.encode(new Buffer('6f' + hash.toString('hex'), 'hex'));
+    } else {
+        hash = 0;
+    }
+    return hash;
+}
+
+
 function multisigHash(script) {
     var hash = Crypto.createHash('sha256')
                .update(new Buffer(script, 'hex'))
@@ -742,9 +758,13 @@ function getInputs(transaction, sign) {
     var blockWorker = new Worker("js/blockWorker.js");
     pair.inputAddresses = [];
     for (var i = 0; i < transaction.inputs.length; i++) {
+        var addr;
         var script = transaction.inputs[i].script;
-            script = script.chunks[script.chunks.length - 1].buf;
-        var addr = multisigHash(script);
+        if (1) { // p2pkh
+            addr = p2pkHash(script.chunks[2].buf);
+        } else { // multisig
+            addr = multisigHash(script.chunks[script.chunks.length - 1].buf);
+        }
         blockWorker.postMessage("https://blockexplorer.com/api/addr/" + addr + "/balance");
         blockWorker.postMessage("https://insight.bitpay.com/api/addr/" + addr + "/balance");
         blockWorker.postMessage("https://blockchain.info/q/addressbalance/" + addr);
@@ -805,8 +825,14 @@ function process_verify_transaction(transaction, sign)
         // Check if the output address is a change address
         present = false;
         for (var j = 0; j < sign.checkpub.length; j++) {
+            // TODO determine address type - get message from dbb-app 'wallet: type'?
+            var checkaddress;
             var pubk = sign.checkpub[j].pubkey; 
-            var checkaddress = multisig1of1(pubk);
+            if (1) { // p2pkh
+                checkaddress = p2pkHash(pubk);
+            } else { // multisig
+                checkaddress = multisigHash(pubk);
+            }
             if (checkaddress === address) {
                 present = sign.checkpub[j].present; 
             }
@@ -933,10 +959,15 @@ function process_2FA_pairing(parse)
 }
   
 
-function process_verify_address(plaintext) 
+function process_verify_address(plaintext, type) 
 {    
     var parse = Base58Check.decode(plaintext).slice(-33).toString('hex');
-    parse = multisig1of1(parse);
+
+    if (type === 'p2pkh')
+        parse = p2pkHash(parse);
+    else 
+        parse = multisig1of1(parse);
+    
     if (!parse) {
         return 'Error: Coin network not defined.';
     }
@@ -1000,7 +1031,7 @@ function parseData(data)
             }
             
             if (plaintext.slice(0,4).localeCompare('xpub') == 0) {
-                showInfoDialog(process_verify_address(plaintext));
+                showInfoDialog(process_verify_address(plaintext, data.type));
                 return;
             }
             
