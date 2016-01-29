@@ -88,6 +88,19 @@ pre {
     z-index: 10;
 }
 
+#beta-badge {
+    background-attachment: fixed;
+    background-color: transparent;
+    background-image: url(../img/betabadgeleft.png);
+    background-position: top left;
+    background-size: 20%;
+    background-repeat: no-repeat;
+    height: 100%;
+    width: 100%;
+    position: fixed;
+    z-index: 9;
+}
+
 .infoText {
     padding: 0px 20px 0px 20px;
 }
