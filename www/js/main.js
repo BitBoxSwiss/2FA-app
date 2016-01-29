@@ -837,11 +837,11 @@ function process_verify_transaction(transaction, sign)
                 present = sign.checkpub[j].present; 
             }
         }
-        
+
         if (!present || transaction.outputs.length == 1) {
             res = address + "  " + amount / SAT2BTC + " BTC\n";
             res_detail += '<span style="color: ' + DBB_COLOR_WARN + ';">' + res + '</span>';
-            res_short += amount / SAT2BTC + " BTC\n" + address + "\n\n";
+            res_short += amount / SAT2BTC + " BTC\n" + address + "\n";
         } else {
             res = address + "  " + amount / SAT2BTC + " BTC (change address)\n";
             res_detail += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '</span>';
@@ -849,10 +849,10 @@ function process_verify_transaction(transaction, sign)
     }
 
     if (res_short == "")
-        res_short = "\nMoving:\n\n" + total_out + " BTC\n(internally)\n\n";
+        res_short = "Moving:\n\n" + total_out + " BTC\n(internally)\n\n";
     else
-        res_short = "\nSending:\n\n" + res_short;
-       
+        res_short = "Sending:\n\n" + res_short;
+
 
     // Get input addresses and balances
     res_detail += "\nInputs:\n";
@@ -875,24 +875,24 @@ function process_verify_transaction(transaction, sign)
     } else {
         res_detail += '<span style="color: ' + DBB_COLOR_WARN + ';">' + res + '</span>';
     }
-    
-    res = "\nFee: " + (total_in - total_out).toFixed(8) + " BTC\n\n";
-    if ((total_in - total_out) > WARNFEE) {
-        res_short += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '<br><br></span>';
-    } else {
-        res_short += '<span style="color: ' + DBB_COLOR_BLACK + ';">' + res + '<br><br></span>';
-    }
-            
-    if (typeof sign.pin == "string")
-        res_short += "\n\nLock code:  " + sign.pin;
 
-    console.log(res_short);
+    res = "\nFee: " + (total_in - total_out).toFixed(8) + " BTC\n";
+    if ((total_in - total_out) > WARNFEE) {
+        res_short += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '<br></span>';
+    } else {
+        res_short += '<span style="color: ' + DBB_COLOR_BLACK + ';">' + res + '<br></span>';
+    }
+
+    if (typeof sign.pin == "string")
+        res_short += "\nLock code:  " + sign.pin + "\n";
+
     showInfoDialog("<pre>" + res_short + "</pre>");
     ui.detailsButton.style.display = "inline";
 
 
     // Verify that input hashes match meta utx
     res_detail += "\nHashes:\n";
+    var errset = false;
     for (var j = 0; j < sign.data.length; j++) {
         var present = false;
         for (var i = 0; i < transaction.inputs.length; i++) {
@@ -908,27 +908,29 @@ function process_verify_transaction(transaction, sign)
         }
 
         if (present === false) {
-            var errmsg = 'WARNING: Unknown data being signed!';
-            err += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + errmsg + '<br><br></span>';
+            if (errset === false) {
+                errset = true;
+                var errmsg = 'WARNING: Unknown data being signed!';
+                err += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + errmsg + '<br><br></span>';
+            }
             res = "Unknown: " + sign.data[j].hash;
-            res_detail += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '</span>';
+            res_detail += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '<br></span>';
         } else {
             res = sign.data[j].hash;
-            res_detail += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '</span>';
+            res_detail += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '<br></span>';
         }
     }
-
-    if (typeof sign.pin == "string")
-        res_detail += "\nLock code:  " + sign.pin;
+    
+    res_detail = err + res_short + "\n" + res_detail;
     
     // Extra information
     console.log("2FA message received:\n" + JSON.stringify(sign, undefined, 4));
     console.log(res_detail);
-    console.log(err);
             
-    if (err != '')
-        showInfoDialog("<pre>" + err + res_detail + "</pre>");
-        
+    if (err != '') {
+        showInfoDialog("<pre>" + err + res_short + "</pre>");
+        ui.detailsButton.style.display = "inline";
+    }
 }
 
 
@@ -1024,7 +1026,7 @@ function parseData(data)
             // Echo verification
             var ciphertext = data.echo;
             var plaintext = aes_cbc_b64_decrypt(ciphertext);
-            
+
             if (plaintext === ciphertext) {
                 showInfoDialog('Could not parse:<br><br>' + JSON.stringify(plaintext, undefined, 4));
                 return; 
