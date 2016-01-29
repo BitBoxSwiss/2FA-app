@@ -89,15 +89,11 @@ pre {
 }
 
 #beta-badge {
-    background-attachment: fixed;
-    background-color: transparent;
-    background-image: url(../img/betabadgeleft.png);
-    background-position: top left;
-    background-size: 20%;
-    background-repeat: no-repeat;
-    height: 100%;
-    width: 100%;
     position: fixed;
+    top: 0;
+    left: 0;
+    width: 20%;
+    height: auto;
     z-index: 9;
 }
 
