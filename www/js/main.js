@@ -35,7 +35,7 @@ var Reverse = require("buffer-reverse")
 
 var PORT = 25698;
 var TIMEOUT = 1500; // ms
-var WARNFEE = 10000; // satoshis TODO update
+var WARNFEE = 500000; // satoshis TODO update
 var SAT2BTC = 100000000; // conversion
 var COINNET = 'livenet';
 //var COINNET = 'testnet';
@@ -757,14 +757,26 @@ function multisig1of1(publickey) {
 function getInputs(transaction, sign) {
     var blockWorker = new Worker("js/blockWorker.js");
     pair.inputAddresses = [];
+   
+    function onlyUnique(value, index, self) { 
+        return self.indexOf(value) === index;
+    }
+
+    var addresses = [];
     for (var i = 0; i < transaction.inputs.length; i++) {
-        var addr;
         var script = transaction.inputs[i].script;
         if (1) { // p2pkh
-            addr = p2pkHash(script.chunks[2].buf);
-        } else { // multisig
-            addr = multisigHash(script.chunks[script.chunks.length - 1].buf);
+            // script is a pubkeyhash
+            addr = Base58Check.encode(new Buffer('00' + script.chunks[2].buf.toString('hex'), 'hex'));
+            ////} else { // multisig
+            ////addr = multisigHash(script.chunks[script.chunks.length - 1].buf); -- probably wrong
         }
+        addresses.push(addr);
+    }
+    var unique_addresses = addresses.filter( onlyUnique );
+
+    for (var i = 0; i < unique_addresses.length; i++) {
+        var addr = unique_addresses[i];
         blockWorker.postMessage("https://blockexplorer.com/api/addr/" + addr + "/balance");
         blockWorker.postMessage("https://insight.bitpay.com/api/addr/" + addr + "/balance");
         blockWorker.postMessage("https://blockchain.info/q/addressbalance/" + addr);
@@ -786,8 +798,7 @@ function getInputs(transaction, sign) {
             input.address = address;
             input.balance = e.data[0];
             pair.inputAddresses.push(input);
-            
-            if (pair.inputAddresses.length === transaction.inputs.length) {
+            if (pair.inputAddresses.length === unique_addresses.length) {
                 blockWorker.terminate();
                 console.log('Got all address balances.', pair.inputAddresses.length);
                 process_verify_transaction(transaction, sign);
@@ -868,7 +879,7 @@ function process_verify_transaction(transaction, sign)
     // Calculate fee (inputs - outputs)
     res_detail += '\nFee:\n';
     res = (total_in - total_out).toFixed(8) + ' BTC\n';
-    if ((total_in - total_out) > WARNFEE) {
+    if ((total_in - total_out) * SAT2BTC > WARNFEE) {
         var errmsg = 'WARNING: High fee!';
         err += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + errmsg + '<br><br></span>';
         res_detail += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '/span>';
@@ -877,7 +888,7 @@ function process_verify_transaction(transaction, sign)
     }
 
     res = "\nFee: " + (total_in - total_out).toFixed(8) + " BTC\n";
-    if ((total_in - total_out) > WARNFEE) {
+    if ((total_in - total_out) * SAT2BTC > WARNFEE) {
         res_short += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '<br></span>';
     } else {
         res_short += '<span style="color: ' + DBB_COLOR_BLACK + ';">' + res + '<br></span>';
