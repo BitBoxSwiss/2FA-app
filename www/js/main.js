@@ -29,8 +29,8 @@
 var Crypto = require("crypto");
 var Bitcore = require("bitcore-lib");
 var Ripemd160 = require('ripemd160');
-var Base58Check = require('bs58check')
-var Reverse = require("buffer-reverse")
+var Base58Check = require('bs58check');
+var Reverse = require("buffer-reverse");
 
 
 var PORT = 25698;
@@ -908,8 +908,8 @@ function process_verify_transaction(transaction, sign)
         var present = false;
         for (var i = 0; i < transaction.inputs.length; i++) {
             var nhashtype = Bitcore.crypto.Signature.SIGHASH_ALL;
-            var script = transaction.inputs[i].script
-                script = script.chunks[script.chunks.length - 1].buf; // redeem script is 2nd to last chunk
+            var script = transaction.inputs[i].script;
+            //script = script.chunks[script.chunks.length - 1].buf; // redeem script is 2nd to last chunk -- hack needed for 1of1 multisig?
             
             var sighash = Bitcore.Transaction.sighash
                 .sighash(transaction, nhashtype, i, script);
