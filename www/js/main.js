@@ -756,55 +756,72 @@ function multisig1of1(publickey) {
 
 function getInputs(transaction, sign) {
     var blockWorker = new Worker("js/blockWorker.js");
+    var addresses = [];
+    var tx = [];
     pair.inputAddresses = [];
    
     function onlyUnique(value, index, self) { 
         return self.indexOf(value) === index;
     }
 
-    var addresses = [];
     for (var i = 0; i < transaction.inputs.length; i++) {
-        var script = transaction.inputs[i].script;
-        if (1) { // p2pkh
-            // script is a pubkeyhash
-            addr = Base58Check.encode(new Buffer('00' + script.chunks[2].buf.toString('hex'), 'hex'));
-            ////} else { // multisig
-            ////addr = multisigHash(script.chunks[script.chunks.length - 1].buf); -- probably wrong
-        }
-        addresses.push(addr);
+        var tr = transaction.toJSON().inputs[i]; 
+        var a = new Bitcore.Script(tr.script)
+                           .toAddress(COINNET)
+                           .toString();
+        console.log('', a);
+        addresses.push(a);
+       
+        var t = {};
+        t.address = a;
+        t.id = tr.prevTxId;
+        tx.push(t);
     }
+    
     var unique_addresses = addresses.filter( onlyUnique );
-
-    for (var i = 0; i < unique_addresses.length; i++) {
-        var addr = unique_addresses[i];
-        blockWorker.postMessage("https://blockexplorer.com/api/addr/" + addr + "/balance");
-        blockWorker.postMessage("https://insight.bitpay.com/api/addr/" + addr + "/balance");
-        blockWorker.postMessage("https://blockchain.info/q/addressbalance/" + addr);
-        blockWorker.onmessage = function(e) {
-            var url = e.data[1].split('/');
-            var address;
-            for (var i = 0; i < url.length; i++) {
-                if (url[i].length === 34)
-                    address = url[i]; 
-            }
-           
-            for (var i = 0; i < pair.inputAddresses.length; i++) {
-                // skip if already got the balance 
-                if (address === pair.inputAddresses[i].address)
-                    return;
-            }
-                    
-            var input = {};
-            input.address = address;
-            input.balance = e.data[0];
-            pair.inputAddresses.push(input);
-            if (pair.inputAddresses.length === unique_addresses.length) {
-                blockWorker.terminate();
-                console.log('Got all address balances.', pair.inputAddresses.length);
-                process_verify_transaction(transaction, sign);
-            }
-        };
+    var addrs = unique_addresses[0];
+    for (var i = 1; i < unique_addresses.length; i++) {
+        addrs += ',' + unique_addresses[i];
     }
+
+    var reply = false; 
+    blockWorker.postMessage("https://blockexplorer.com/api/addrs/" + addrs + "/utxo");
+    blockWorker.postMessage("https://insight.bitpay.com/api/addrs/" + addrs + "/utxo");
+    blockWorker.onmessage = function(e) {
+        if (reply)
+            return;
+        reply = true;
+
+        var ret = JSON.parse(e.data[0]);
+        for (var i = 0; i < ret.length; i++) {
+            for (var j = 0; j < tx.length; j++) {
+                if (ret[i].txid === tx[j].id && ret[i].address === tx[j].address) {
+                    var input = {};
+                    input.balance = Number(ret[i].amount) * SAT2BTC;
+                    input.address = ret[i].address;
+                    input.txid = ret[i].txid;
+                   
+                    var present = false;
+                    for (var k = 0; k < pair.inputAddresses.length; k++) {
+                        if (input.address === pair.inputAddresses[k].address) {
+                            pair.inputAddresses[k].balance += Number(input.balance);
+                            present = true;
+                            break;
+                        }
+                    }
+                    if (present === false) {
+                        pair.inputAddresses.push(input);
+                    }
+
+                    break;
+                }
+            }
+        }
+           
+        blockWorker.terminate();
+        console.log('Got address balances.', pair.inputAddresses.length);
+        process_verify_transaction(transaction, sign);
+    };
 }
 
 
@@ -926,7 +943,6 @@ function process_verify_transaction(transaction, sign)
     
     // Extra information
     console.log("2FA message received:\n" + JSON.stringify(sign, undefined, 4));
-    console.log(res_detail);
             
     if (err != '') {
         showInfoDialog("<pre>" + err + res_short + "</pre>");
