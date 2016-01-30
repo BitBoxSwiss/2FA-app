@@ -40,7 +40,6 @@
         
         <script type="text/javascript" src="cordova.js" async></script>
         <script type="text/javascript" src="js/app.js" async></script>
-    
     </head>
 
     <body>
@@ -49,16 +48,16 @@
         <div id="beta-badge"><img src="img/betabadgeleft.png" height="100%" width="100%"></div>
 
         <br><br><br><br><db>#</db><br><br><dbs>digital&nbsp;bitbox</dbs><br><br>
-       
-        <button id="scan-button" class="buttonRound blink hiddenButton">Scan</button>
         <br>
         <br>
-        
+
 
         <div id="info-text" class="infoText"></div>
         <br>
-        
 
+
+        <button id="ip-scan-button" class="buttonSimple hiddenButton">Scan IP from QR code</button>
+        <button id="ip-manual-button" class="buttonSimple hiddenButton">Type IP address</button>
         <button id="pair-manual-button" class="buttonRound hiddenButton">Pair manually</button>
         <button id="details-button" class="buttonRound hiddenButton">Details</button>
         <button id="clear-button" class="buttonRound hiddenButton">Clear</button>
@@ -72,15 +71,15 @@
             <button id="submit-ip-button" class="buttonRound">Submit</button>
             <button id="cancel-ip-button" class="buttonRound">Cancel</button>
         </div>
-        
+
         <div id="pw-dialog" class="hiddenDiv">
             <input type="text" id="pw-text" class="textInput" value="">
             <br>
             <button id="submit-pw-button" class="buttonRound">Submit</button>
             <button id="cancel-button" class="buttonRound">Cancel</button>
         </div>
-        
-        
+
+
         <div id="pair-dialog" class="hiddenDiv">
             <button id="blink-del-button" class="buttonDel">
                 <img src="img/erase_to_the_left_444.png" alt="Del" height="36px" width="36px">
@@ -96,32 +95,23 @@
             <br>
             <div id="pair-strength" class="infoText"></div>
         </div>
-       
 
-        <div class="options">
-            <div id="connect-option-buttons" class="hiddenButton">
-                <button id="ip-manual-button" class="buttonSimple">Enter IP address</button>
-                <button id="ip-scan-button" class="buttonSimple">Get IP from QR code</button>
-            </div>
-            <br><br>
-            <br><br>
-            <br><br>
-        </div>
+
         <div id="options-dialog" class="options">
             <div id="option-buttons" class="hiddenButton">
                 <button id="pair-option-button" class="buttonSimple">Pair device</button>
-                <button id="show-scan-button" class="buttonSimple">Scan QR code</button>
+                <button id="scan-button" class="buttonSimple">Scan QR code</button>
                 <!--button id="change-pw-button" class="buttonSimple">Enter password</button-->
                 <button id="forget-button" class="buttonSimple">Forget all</button>
                 <br>
             </div>
             <img id="settings-icon" class="settingsIcon" src="img/bars.png" alt="Options" >
         </div>
-            
-        
+
+
         <div id="status-div" class="status">
             <img id="pair-icon" class="pairIcon" src="img/monitor_444.png" alt="Paired" >
         </div>
-    
+
     </body>
 </html>

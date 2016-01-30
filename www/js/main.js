@@ -78,7 +78,6 @@ var ui = {
     submitIpButton: null,
     ipScanButton: null,
     ipManualButton: null,
-    connectOptionButtons: null,
     pairManualButton: null,
     pairBeginButton: null,
     pairCancelButton: null,
@@ -86,7 +85,6 @@ var ui = {
     pairStrength: null,
     settingsIcon: null,
     optionButtons: null,
-    showScanButton: null,
     scanButton: null, 
     infoText: null,
     splashScreen: null,
@@ -145,11 +143,8 @@ function init()
     ui.pairManualButton.addEventListener("touchstart", pairManual, false);
     ui.ipManualButton.addEventListener("touchstart", ipManual, false);
     ui.ipScanButton.addEventListener("touchstart", startScan, false);
+    ui.scanButton.addEventListener("touchstart", startScan, false);
     ui.pairIcon.addEventListener("touchstart", pairStatus, false);
-    ui.showScanButton.addEventListener("touchstart", startScan, false);
-    //ui.showScanButton.addEventListener("touchstart", showScanButton, false);
-    //ui.scanButton.addEventListener("touchstart", startScan, false);
-    
     ui.blinkDelButton.addEventListener("touchstart", blinkDel, false);
     ui.blink1Button.addEventListener("touchstart", blinkPress1, false);
     ui.blink2Button.addEventListener("touchstart", blinkPress2, false);
@@ -245,13 +240,13 @@ function wsFind() {
     if (navigator.connection.type === Connection.WIFI) {
         if (ws_opt.IP) {
             ws_opt.address = 'ws://' + ws_opt.IP + ':' + PORT;
-            ws_opt.name = 'Manually entered';
-            if (alternate = !alternate) {
+            ws_opt.name = ws_opt.IP;
+            //if (alternate = !alternate) {
                 wsStart();
-                return;
-            }
+                //return;
+            //}
         }
-        ZeroConf.watch("_dbb._tcp.local.", wsFound); // does not reconnect if turn off/on wifi
+        //ZeroConf.watch("_dbb._tcp.local.", wsFound); // does not reconnect if turn off/on wifi
         return;
     }
     checkConnection();
@@ -305,10 +300,11 @@ function hidePairDialog() {
 
 
 function showNoWSDialog() {
-    ui.infoText.innerHTML = 'Cannot find the Digital Bitbox PC app.';
-    ui.connectOptionButtons.style.display = "inline";
-    ui.pairManualButton.style.display = "inline";
-    ui.clearButton.style.display = "inline";
+    ui.infoText.innerHTML = 'The IP address of the Digital Bitbox PC app is unknown.';
+    ui.ipScanButton.style.display = "inline";
+    ui.ipManualButton.style.display = "inline";
+    //ui.pairManualButton.style.display = "inline";
+    ui.pairCancelButton.style.display = "inline";
     ui.settingsIcon.style.visibility = "hidden";
     hideOptionButtons();
 }
@@ -325,8 +321,9 @@ function showIpDialog() {
 
 
 function hideIpDialog() {
-    ui.connectOptionButtons.style.display = "none";
-    ui.pairManualButton.style.display = "none";
+    ui.ipScanButton.style.display = "none";
+    ui.ipManualButton.style.display = "none";
+    //ui.pairManualButton.style.display = "none";
     ui.settingsIcon.style.visibility = "visible";
     ui.ipDialog.style.display = "none";
     ui.ipText.value = "";
@@ -358,12 +355,6 @@ function hideOptionButtons() {
 }
 
 
-function showScanButton() {
-    hideOptionButtons();
-    ui.scanButton.style.display = "inline";
-}
-
-
 function displaySettings() {
     
     wsSend('Touched settings button');
@@ -372,7 +363,6 @@ function displaySettings() {
         hideOptionButtons();
     } else {
         showOptionButtons();
-        ui.scanButton.style.display = "none";
     }
 }
 
@@ -390,7 +380,7 @@ function blinkCodeStrength() {
     } else if (pair.blinkcode.length < 5) {
         ui.pairStrength.innerHTML = "Medium strength";
         ui.pairStrength.style.color = DBB_COLOR_WARN;
-    } else if (pair.blinkcode.length > 6) {
+    } else if (pair.blinkcode.length > 5) {
         ui.pairStrength.innerHTML = 'When ready to end:<br>Tap the touch button on the Digital Bitbox.</pre>';
         ui.pairStrength.style.color = DBB_COLOR_BLACK;
     } else {
@@ -438,8 +428,8 @@ function pairEnter() {
     }
     
     if (navigator.connection.type != Connection.WIFI) {
-        showInfoDialog('A WiFi connection was not found.'); 
-        ui.pairManualButton.style.display = "inline";
+        showInfoDialog('A WiFi connection is required for pairing.'); 
+        //ui.pairManualButton.style.display = "inline";
         ui.settingsIcon.style.visibility = "hidden";
     } else {
         showNoWSDialog();
@@ -473,7 +463,7 @@ function pairManual() {
                             '<br><br><br>Then begin, and your Digital Bitbox will blink.<br><pre>' +
                             '- Count the number of blinks in each set.\n' +
                             '- Enter those numbers here.\n' +
-                            '- Tap the touch button on the Digital Bitbox to end.</pre>';
+                            '- Stop anytime by tapping the Digital Bitbox\'s touch button.</pre>';
     
     wsSend('{"ecdh":"manual"}');
 }
@@ -493,7 +483,7 @@ function pairStatus() {
     if (ui.clearButton.style.display == "inline"){
         cancelClear();
     } else {
-        showInfoDialog('Digital Bitbox PC app connect at:<br>' + ws_opt.address + '<br>' + ws_opt.name);
+        showInfoDialog('Digital Bitbox PC app connected:<br>' + ws_opt.name);
     }
 }
 
@@ -540,7 +530,6 @@ function cancelClear() {
     hideIpDialog();
     showInfoDialog("");
     ui.clearButton.style.display = "none";
-    ui.scanButton.style.display = "none";
 }
 
 
@@ -909,7 +898,7 @@ function process_verify_transaction(transaction, sign)
 
 
     // Verify that input hashes match meta utx
-    res_detail += "\nHashes:\n";
+    res_detail += "\nHashes to be signed:\n";
     var errset = false;
     for (var j = 0; j < sign.data.length; j++) {
         var present = false;
