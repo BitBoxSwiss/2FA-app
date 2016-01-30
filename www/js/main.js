@@ -877,16 +877,6 @@ function process_verify_transaction(transaction, sign)
 
 
     // Calculate fee (inputs - outputs)
-    res_detail += '\nFee:\n';
-    res = (total_in - total_out).toFixed(8) + ' BTC\n';
-    if ((total_in - total_out) * SAT2BTC > WARNFEE) {
-        var errmsg = 'WARNING: High fee!';
-        err += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + errmsg + '<br><br></span>';
-        res_detail += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '/span>';
-    } else {
-        res_detail += '<span style="color: ' + DBB_COLOR_WARN + ';">' + res + '</span>';
-    }
-
     res = "\nFee: " + (total_in - total_out).toFixed(8) + " BTC\n";
     if ((total_in - total_out) * SAT2BTC > WARNFEE) {
         res_short += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '<br></span>';
