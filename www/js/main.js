@@ -1029,26 +1029,27 @@ function parseData(data)
     try {
         
         if (data.slice(0,2).localeCompare('QS') == 0) {
+            var text = '';
+            var inprogress = false;
             var seqNumber = data[2];
             var seqTotal = data[3];
             pair.QRtext[seqNumber] = data.substring(4);
 
-            if (pair.QRtext.length != seqTotal) {
-                showInfoDialog('continue scanning');
-                ui.clearButton.style.display = "none";
-                setTimeout(startScan, TIMEOUT);
-                return; 
-            }
-            
             for (var i = 0; i < seqTotal; i++) {
                 if (pair.QRtext[i] === undefined) {
-                    showInfoDialog('continue scanning');
-                    ui.clearButton.style.display = "none";
-                    setTimeout(startScan, TIMEOUT);
-                    return; 
-                }
+                    inprogress = true;
+                    text += ' _ ';
+                } else 
+                    text += '&#9724;';
             }
-            
+           
+            if (inprogress) {
+                showInfoDialog('continue scanning<br>' + text);
+                ui.clearButton.style.display = "none";
+                setTimeout(startScan, TIMEOUT);
+                return;
+            }
+
             data = pair.QRtext.join('');
             pair.QRtext = [];
         }
@@ -1107,9 +1108,11 @@ function parseData(data)
         showInfoDialog(data);
     }
 
-    if (data == "")
+    if (data == "") {
+        pair.QRtext = [];
         showInfoDialog("--");
-
+        ui.settingsIcon.style.visibility = "hidden";
+    }
 }
 
 
