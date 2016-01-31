@@ -505,6 +505,7 @@ function setKey() {
 function ipForget() {
     ws.close();
     ws_opt.IP = null;
+    pair.ip_saved = "";
     writeIp();
     cancelClear();
 }
