@@ -776,12 +776,40 @@ function getInputs(transaction, sign) {
     var reply = false; 
     blockWorker.postMessage("https://blockexplorer.com/api/addrs/" + addrs + "/utxo");
     blockWorker.postMessage("https://insight.bitpay.com/api/addrs/" + addrs + "/utxo");
+    blockWorker.postMessage("https://btc.blockr.io/api/v1/address/unspent/" + addrs);
     blockWorker.onmessage = function(e) {
         if (reply)
             return;
         reply = true;
-
         var ret = JSON.parse(e.data[0]);
+
+
+        // Reformat JSON from blockr.io 
+        if (typeof ret.data === 'object') {
+            var tmp = ret.data;
+            ret = [];
+            
+            if (tmp.length === undefined || tmp.length == 1) {
+                for (var j = 0; j < tmp.unspent.length; j++) {
+                    var t = {};
+                    t.address = tmp.address;
+                    t.txid = tmp.unspent[j].tx;
+                    t.amount = tmp.unspent[j].amount;
+                    ret.push(t);
+                }
+            } else { 
+                for (var i = 0; i < tmp.length; i++) {
+                    for (var j = 0; j < tmp[i].unspent.length; j++) {
+                        var t = {};
+                        t.address = tmp[i].address;
+                        t.txid = tmp[i].unspent[j].tx;
+                        t.amount = tmp[i].unspent[j].amount;
+                        ret.push(t);
+                    }
+                }
+            }
+        }
+
         for (var i = 0; i < ret.length; i++) {
             for (var j = 0; j < tx.length; j++) {
                 if (ret[i].txid === tx[j].id && ret[i].address === tx[j].address) {
