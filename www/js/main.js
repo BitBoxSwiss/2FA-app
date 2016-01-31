@@ -78,6 +78,7 @@ var ui = {
     submitIpButton: null,
     ipScanButton: null,
     ipManualButton: null,
+    ipForgetButton: null,
     pairManualButton: null,
     pairBeginButton: null,
     pairCancelButton: null,
@@ -141,6 +142,7 @@ function init()
     ui.pairBeginButton.addEventListener("touchstart", pairPc, false);
     ui.pairCancelButton.addEventListener("touchstart", cancelClear, false);
     ui.pairManualButton.addEventListener("touchstart", pairManual, false);
+    ui.ipForgetButton.addEventListener("touchstart", ipForget, false);
     ui.ipManualButton.addEventListener("touchstart", ipManual, false);
     ui.ipScanButton.addEventListener("touchstart", startScan, false);
     ui.scanButton.addEventListener("touchstart", startScan, false);
@@ -300,6 +302,7 @@ function hidePairDialog() {
 
 
 function showNoWSDialog() {
+    cancelClear();
     ui.infoText.innerHTML = 'The IP address of the Digital Bitbox PC app is unknown.';
     ui.ipScanButton.style.display = "inline";
     ui.ipManualButton.style.display = "inline";
@@ -484,6 +487,7 @@ function pairStatus() {
         cancelClear();
     } else {
         showInfoDialog('Digital Bitbox PC app connected:<br>' + ws_opt.name);
+        ui.ipForgetButton.style.display = "inline";
     }
 }
 
@@ -495,6 +499,14 @@ function pairStatus() {
 function setKey() {
     ui.infoText.innerHTML = "";
     showPasswordDialog();
+}
+
+
+function ipForget() {
+    ws.close();
+    ws_opt.IP = null;
+    writeIp();
+    cancelClear();
 }
 
 
@@ -529,6 +541,7 @@ function cancelClear() {
     hidePairDialog();
     hideIpDialog();
     showInfoDialog("");
+    ui.ipForgetButton.style.display = "none";
     ui.clearButton.style.display = "none";
 }
 
