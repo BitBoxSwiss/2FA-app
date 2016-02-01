@@ -6,7 +6,7 @@ This mobile app works with the [Digital Bitbox](https://digitalbitbox.com) hardw
 
 ## Installation
 
-- [Google Play Store for Android](https://play.google.com/store/apps/details?id=com.digitalbitbox.qr)
+- [Google Play Store for Android](https://play.google.com/store/apps/details?id=com.digitalbitbox.tfa)
 - App Store for iOS at a later date
 
 
