@@ -1101,8 +1101,29 @@ function parseData(data)
             }
             
             if (typeof JSON.parse(plaintext).sign == "object") {
+                var transaction;
                 var sign = JSON.parse(plaintext).sign;
-                var transaction = new Bitcore.Transaction(sign.meta);
+                
+                if (typeof data.tx == "string") {
+                    var hash;
+                    hash = Crypto.createHash('sha256')
+                                 .update(new Buffer(data.tx, 'ascii'))
+                                 .digest();
+                    hash = Crypto.createHash('sha256')
+                                 .update(new Buffer(hash, 'hex'))
+                                 .digest()
+                                 .toString('hex');
+                    
+                    if (hash !== sign.meta) {
+                        showInfoDialog('Error: mismatched verification data.');
+                        return;
+                    }
+                     
+                    transaction = new Bitcore.Transaction(data.tx);
+                } else {
+                    transaction = new Bitcore.Transaction(sign.meta);
+                }
+
                 if (typeof JSON.parse(plaintext).pin == "string")
                     sign.pin = JSON.parse(plaintext).pin;
                     
