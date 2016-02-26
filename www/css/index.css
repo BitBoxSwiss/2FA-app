@@ -88,15 +88,6 @@ pre {
     z-index: 10;
 }
 
-#beta-badge {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 20%;
-    height: auto;
-    z-index: 9;
-}
-
 .infoText {
     padding: 0px 20px 0px 20px;
 }
