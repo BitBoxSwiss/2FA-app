@@ -1032,8 +1032,19 @@ function parseData(data)
         if (data.slice(0,2).localeCompare('QS') == 0) {
             var text = '';
             var inprogress = false;
-            var seqNumber = data[2];
+            var seqNumber = data[2]; // {0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ}
             var seqTotal = data[3];
+           
+            if (isNaN(seqNumber)) {
+                seqNumber = seqNumber.toUpperCase().charCodeAt(0);
+                seqNumber = seqNumber - "A".charCodeAt(0) + 10;
+            }
+            
+            if (isNaN(seqTotal)) {
+                seqTotal = seqTotal.toUpperCase().charCodeAt(0);
+                seqTotal = seqTotal - "A".charCodeAt(0) + 10;
+            }
+            
             pair.QRtext[seqNumber] = data.substring(4);
 
             for (var i = 0; i < seqTotal; i++) {
