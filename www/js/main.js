@@ -84,6 +84,7 @@ var ui = {
     pairCancelButton: null,
     pairOptionButton: null,
     pairStrength: null,
+    pairInfo: null,
     settingsIcon: null,
     optionButtons: null,
     scanButton: null, 
@@ -297,6 +298,7 @@ function hidePairDialog() {
     ui.pairCancelButton.style.display = "none";
     ui.pairDialog.style.display = "none";
     ui.pairStrength.innerHTML = "";
+    ui.pairInfo.innerHTML = "";
     pair.blinkcode = [];
 }
 
@@ -376,7 +378,7 @@ function displaySettings() {
 
 function blinkCodeStrength() {
     if (pair.blinkcode.length == 0) {
-        ui.pairStrength.innerHTML = "";
+        ui.pairStrength.innerHTML = "&nbsp;";
     } else if (pair.blinkcode.length < 3) {
         ui.pairStrength.innerHTML = "Low strength";
         ui.pairStrength.style.color = DBB_COLOR_DANGER;
@@ -384,11 +386,12 @@ function blinkCodeStrength() {
         ui.pairStrength.innerHTML = "Medium strength";
         ui.pairStrength.style.color = DBB_COLOR_WARN;
     } else if (pair.blinkcode.length > 5) {
-        ui.pairStrength.innerHTML = 'When ready to end:<br>Tap the touch button on the Digital Bitbox.</pre>';
+        ui.pairStrength.innerHTML = "&nbsp;";
         ui.pairStrength.style.color = DBB_COLOR_BLACK;
     } else {
-        ui.pairStrength.innerHTML = "";
+        ui.pairStrength.innerHTML = "&nbsp;";
     }
+    ui.pairInfo.innerHTML = '<br><br>When ready to end:<br>Tap the touch button on the Digital Bitbox.</pre>';
 }
 
 
