@@ -26,6 +26,8 @@
 
 'use strict';
 
+var VERSION = '1.0.1'; // match to version in config.xml
+
 var Crypto = require("crypto");
 var Bitcore = require("bitcore-lib");
 var Ripemd160 = require('ripemd160');
@@ -207,7 +209,7 @@ function wsStart() {
         ws.onopen = function () {
             ui.pairIcon.style.visibility = "visible";
             console.log('WebSocket openned');
-            wsSend('{"tfa": "Hello dbb app!"}');
+            wsSend('{"tfa": "Hello dbb app!", "version": "' + VERSION + '"}');
         };
 
         ws.onmessage = function (event) {
