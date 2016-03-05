@@ -26,6 +26,8 @@
 
 'use strict';
 
+var VERSION = '1.0.1'; // match to version in config.xml
+
 var Crypto = require("crypto");
 var Bitcore = require("bitcore-lib");
 var Ripemd160 = require('ripemd160');
@@ -84,6 +86,7 @@ var ui = {
     pairCancelButton: null,
     pairOptionButton: null,
     pairStrength: null,
+    pairInfo: null,
     settingsIcon: null,
     optionButtons: null,
     scanButton: null, 
@@ -206,7 +209,7 @@ function wsStart() {
         ws.onopen = function () {
             ui.pairIcon.style.visibility = "visible";
             console.log('WebSocket openned');
-            wsSend('{"tfa": "Hello dbb app!"}');
+            wsSend('{"tfa": "Hello dbb app!", "version": "' + VERSION + '"}');
         };
 
         ws.onmessage = function (event) {
@@ -297,6 +300,7 @@ function hidePairDialog() {
     ui.pairCancelButton.style.display = "none";
     ui.pairDialog.style.display = "none";
     ui.pairStrength.innerHTML = "";
+    ui.pairInfo.innerHTML = "";
     pair.blinkcode = [];
 }
 
@@ -376,7 +380,7 @@ function displaySettings() {
 
 function blinkCodeStrength() {
     if (pair.blinkcode.length == 0) {
-        ui.pairStrength.innerHTML = "";
+        ui.pairStrength.innerHTML = "&nbsp;";
     } else if (pair.blinkcode.length < 3) {
         ui.pairStrength.innerHTML = "Low strength";
         ui.pairStrength.style.color = DBB_COLOR_DANGER;
@@ -384,11 +388,12 @@ function blinkCodeStrength() {
         ui.pairStrength.innerHTML = "Medium strength";
         ui.pairStrength.style.color = DBB_COLOR_WARN;
     } else if (pair.blinkcode.length > 5) {
-        ui.pairStrength.innerHTML = 'When ready to end:<br>Tap the touch button on the Digital Bitbox.</pre>';
+        ui.pairStrength.innerHTML = "&nbsp;";
         ui.pairStrength.style.color = DBB_COLOR_BLACK;
     } else {
-        ui.pairStrength.innerHTML = "";
+        ui.pairStrength.innerHTML = "&nbsp;";
     }
+    ui.pairInfo.innerHTML = '<br><br>When ready to end:<br>Tap the touch button on the Digital Bitbox.</pre>';
 }
 
 
@@ -1032,8 +1037,19 @@ function parseData(data)
         if (data.slice(0,2).localeCompare('QS') == 0) {
             var text = '';
             var inprogress = false;
-            var seqNumber = data[2];
+            var seqNumber = data[2]; // {0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ}
             var seqTotal = data[3];
+           
+            if (isNaN(seqNumber)) {
+                seqNumber = seqNumber.toUpperCase().charCodeAt(0);
+                seqNumber = seqNumber - "A".charCodeAt(0) + 10;
+            }
+            
+            if (isNaN(seqTotal)) {
+                seqTotal = seqTotal.toUpperCase().charCodeAt(0);
+                seqTotal = seqTotal - "A".charCodeAt(0) + 10;
+            }
+            
             pair.QRtext[seqNumber] = data.substring(4);
 
             for (var i = 0; i < seqTotal; i++) {
@@ -1087,8 +1103,29 @@ function parseData(data)
             }
             
             if (typeof JSON.parse(plaintext).sign == "object") {
+                var transaction;
                 var sign = JSON.parse(plaintext).sign;
-                var transaction = new Bitcore.Transaction(sign.meta);
+                
+                if (typeof data.tx == "string") {
+                    var hash;
+                    hash = Crypto.createHash('sha256')
+                                 .update(new Buffer(data.tx, 'ascii'))
+                                 .digest();
+                    hash = Crypto.createHash('sha256')
+                                 .update(new Buffer(hash, 'hex'))
+                                 .digest()
+                                 .toString('hex');
+                    
+                    if (hash !== sign.meta) {
+                        showInfoDialog('Error: mismatched verification data.');
+                        return;
+                    }
+                     
+                    transaction = new Bitcore.Transaction(data.tx);
+                } else {
+                    transaction = new Bitcore.Transaction(sign.meta);
+                }
+
                 if (typeof JSON.parse(plaintext).pin == "string")
                     sign.pin = JSON.parse(plaintext).pin;
                     
