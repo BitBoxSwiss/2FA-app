@@ -36,6 +36,7 @@
         
         <link rel="stylesheet" type="text/css" href="css/index.css" />
         <link rel="stylesheet" type="text/css" href="css/digiboxfont.css" />
+        <link rel="stylesheet" type="text/css" href="font/font-awesome/css/font-awesome.min.css" />
         <title>Digital Bitbox 2FA</title>
         
         <script type="text/javascript" src="cordova.js" async></script>
@@ -46,41 +47,100 @@
 
         <div id="splash-screen"></div>
 
-        <br><br><br><br><db>#</db><br><br><dbs>digital&nbsp;bitbox</dbs><br><br>
-        <br>
-        <br>
+        <div id="spinner-dialog" class="spinner hidden"><i class="fa fa-minus fa-spin fa-4x"></i></div>
 
+        <div class="header"><db>#</db><dbs>digital&nbsp;bitbox</dbs></div>
 
-        <div id="info-text" class="infoText"></div>
-        <br>
-
-
-        <button id="ip-scan-button" class="buttonSimple hiddenButton">Scan IP from QR code</button>
-        <button id="ip-manual-button" class="buttonSimple hiddenButton">Type IP address</button>
-        <button id="ip-forget-button" class="buttonRound hiddenButton">Forget IP</button>
-        <button id="pair-manual-button" class="buttonRound hiddenButton">Pair manually</button>
-        <button id="details-button" class="buttonRound hiddenButton">Details</button>
-        <button id="clear-button" class="buttonRound hiddenButton">Clear</button>
-        <button id="pair-begin-button" class="buttonRound hiddenButton">Begin!</button>
-        <button id="pair-cancel-button" class="buttonRound hiddenButton">Cancel</button>
-
-
-        <div id="ip-dialog" class="hiddenDiv">
-            <input type="text" id="ip-text" class="textInput" value="">
-            <br>
-            <button id="submit-ip-button" class="buttonRound">Submit</button>
-            <button id="cancel-ip-button" class="buttonRound">Cancel</button>
+        <div class="options">
+            <button id="options-icon" class="optionsIcon"><i class="fa fa-bars fa-2x"></i></button>
+            <div id="sidebar" class="sidebar">
+                <br><br><br><br>
+                <button id="disconnect-button" class="buttonOption">Disconnect and unpair</button><br>
+                <button id="scan-button" class="buttonOption">Manually scan QR codes</button><br>
+            </div>
         </div>
 
-        <div id="pw-dialog" class="hiddenDiv">
-            <input type="text" id="pw-text" class="textInput" value="">
-            <br>
-            <button id="submit-pw-button" class="buttonRound">Submit</button>
-            <button id="cancel-button" class="buttonRound">Cancel</button>
+        
+        
+        <br><br><br>
+        <br><br><br>
+        <br><br><br>
+
+
+        
+        <div id="connect-check-dialog">
+            <i class="fa fa-mobile fa-4x"></i>
+            <br><br>
+            <div id="connect-check" class="infoText light"></div>
         </div>
 
 
-        <div id="pair-dialog" class="hiddenDiv">
+
+        <div id="connect-pc-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp; 
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp; 
+            <i class="fa fa-desktop fa-4x"></i>
+            <br><br>
+            <button id="connect-scan-button" class="buttonSimple">Connect</button>
+            <div class="infoText light">
+                Click on the 'Connect mobile app' button in the desktop app's Settings tab, and scan the QR code.
+            </div>
+        </div>
+
+
+
+        <div id="pair-dbb-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp; 
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp; 
+            <img class="fa" style="opacity:0" src="img/dbb.png" width="30">
+            <span class="fa led">
+                <img src="img/dbb_blink.png" width="30" />
+                <img class="top" src="img/dbb.png" width="30" />
+            </span> 
+            <br><br>
+            <button id="pair-begin-button" class="buttonSimple">Pair</button>
+            <div class="infoText light">
+            Pair with your Digital Bitbox by counting the number of LED blinks.
+            </div>
+        </div>
+
+
+        
+        <div id="pair-success-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp; 
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp; 
+            <img class="fa" src="img/dbb_blink.png" width="30" />
+            <br><br>
+            <button id="pair-success-button" class="buttonSimple">Continue</button>
+            <div class="infoText light">
+                Successfully paired!
+            </div>
+        </div>
+      
+
+
+        <div id="pair-fail-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp; 
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp; 
+            <img class="fa" src="img/dbb.png" width="30">
+            <br><br>
+            <button id="pair-retry-button" class="buttonSimple">Retry</button>
+            <div class="infoText light">
+                Unsuccessful pairing.
+            </div>
+        </div>
+
+
+        
+        <div id="pair-blink-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp; 
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp; 
+            <img class="fa" src="img/dbb_blink.png" width="30" />
+            <div class="infoText light">
+                Enter the number of blinks.
+                <br><br>
+                To end, tap the touch button on the Digital Bitbox.
+            </div>
             <button id="blink-del-button" class="buttonDel">
                 <img src="img/erase_to_the_left_444.png" alt="Del" height="36px" width="36px">
             </button>
@@ -92,27 +152,103 @@
             &nbsp;&nbsp;&nbsp;&nbsp;
             &nbsp;&nbsp;&nbsp;&nbsp;
             <br>
-            <br>
+            <div id="pair-progress" class="infoText">&nbsp;</div>
             <div id="pair-strength" class="infoText"></div>
-            <div id="pair-info" class="infoText"></div>
+        </div>
+        
+        
+        <div id="qr-sequence-dialog" class="hidden">
+            <div id="qr-sequence-text" class="infoText"></div>
         </div>
 
+       
+        <!-- unused - - >
+        <button id="pair-manual-button" class="buttonRound hidden">Pair manually</button-->
 
-        <div id="options-dialog" class="options">
-            <div id="option-buttons" class="hiddenButton">
-                <button id="pair-option-button" class="buttonSimple">Pair device</button>
-                <button id="scan-button" class="buttonSimple">Scan QR code</button>
-                <!--button id="change-pw-button" class="buttonSimple">Enter password</button-->
-                <button id="forget-button" class="buttonSimple">Forget all</button>
-                <br>
+
+        <div id="pair-exists-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp; 
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp; 
+            <img class="fa" src="img/dbb_blink.png" width="30" />
+            <br><br>
+            <button id="pair-exists-pair-button" class="buttonSimple">Pair again</button>
+            <button id="pair-exists-continue-button" class="buttonSimple">Continue</button>
+            <div class="infoText light">
+                The mobile app has already been paired with a Digital Bitbox.
             </div>
-            <img id="settings-icon" class="settingsIcon" src="img/bars.png" alt="Options" >
+        </div>
+
+        
+        <div id="parse-error-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp; 
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp; 
+            <img class="fa" style="opacity:0" src="img/dbb.png" width="30">
+            <span class="fa led">
+                <img src="img/dbb_blink.png" width="30" />
+                <img class="top" src="img/dbb.png" width="30" />
+            </span> 
+            <br><br>
+            <button id="parse-error-pair-button" class="buttonSimple">Pair again</button>
+            <button id="parse-error-cancel-button" class="buttonSimple">Cancel</button>
+            <div class="infoText">
+                Unrecognized data to verify. Is the Digital Bitbox correctly paired?
+            </div>
         </div>
 
 
-        <div id="status-div" class="status">
-            <img id="pair-icon" class="pairIcon" src="img/monitor_444.png" alt="Paired" >
+        
+        <div id="waiting-dialog" class="hidden">
+            <div class="">
+                <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp;&nbsp;&nbsp; 
+                <i class="fa fa-desktop fa-4x"></i>&nbsp;&nbsp;&nbsp;&nbsp; 
+                <img class="fa dbbWaiting" src="img/dbb.png" width="30">
+            </div>
+            <div class="infoText">
+                <br><big>Ready...</big><br><br><br><br>
+                <span class="light">Data to verify is displayed automatically.</span>
+            </div>
         </div>
-
+    
+        
+        
+        <div id="receive-dialog" class="hidden">
+            <div class="infoText"><big>Receiving address</big></div>
+            <i class="fa fa-long-arrow-up fa-lg"></i>
+            <div id="receive-address"></div>
+            <br>
+            <button id="receive-button" class="buttonSimple">Clear</button>
+        </div>
+    
+        
+        
+        <div id="send-dialog" class="hidden">
+            <div "infoText">
+                <big>
+                Sending&nbsp;
+                <b><span id="send-amount"></span></b>
+                BTC
+                </big>
+            </div>
+            <br><i class="fa fa-long-arrow-down fa-lg"></i><br><br>
+            <div id="send-address"></div>
+            <div id="send-pin"></div>
+            <div id="send-error"></div>
+            <br>
+            <button id="details-button" class="buttonSimple">Details</button>
+            <button id="send-button" class="buttonSimple">Clear</button>
+            <div id="send-details" class="sendDetails hidden"></div>
+        </div>
+    
+        
+        <div id="tx-error-dialog" class="hidden">
+            <div class="infoText">
+                <br><big>Corrupted transaction verification data.</big><br><br><br><br>
+            </div>
+            <button id="tx-error-pair-button" class="buttonSimple">Pair again</button>
+            <button id="tx-error-cancel-button" class="buttonSimple">Cancel</button>
+        </div>
+    
+    
+    
     </body>
 </html>

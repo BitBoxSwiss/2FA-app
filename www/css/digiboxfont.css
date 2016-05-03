@@ -38,14 +38,14 @@
 }
 
 db {
-    margin: 0 0 25px;
-    font-size: 50px;
+    margin: 0 10px 25px;
+    font-size: 40px;
     font-family: "Digibox";
 }
 
 dbs {
     margin: 0 0 25px;
-    font-size: 50px;
+    font-size: 30px;
     font-family: "DigiboxSimple";
 }
 

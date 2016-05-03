@@ -66,7 +66,7 @@ body {
     text-align:center;
     word-wrap:break-word;
     font-family: 'HelveticaNeue-Light', 'HelveticaNeue', Helvetica, Arial, sans-serif;
-    font-size:12px;
+    font-size:14px;
 }
         
 pre {
@@ -85,26 +85,70 @@ pre {
     height: 100%;
     width: 100%;
     position: fixed;
-    z-index: 10;
+    z-index: 1000;
 }
 
 .infoText {
-    padding: 0px 20px 0px 20px;
+    padding: 15px 15% 15px 15%;
 }
 
-.options {
-    position:absolute;
-    bottom:0;
+.header {
+    position:fixed;
+    top:0;
+    text-align:left;
     width:100%;
-    margin: 12px auto 12px auto;
+    margin:12px auto 12px auto;
+    z-index:50;
 }
 
-.status {
-    position:absolute;
-    bottom:0;
+.spinner {
+    position:fixed;
+    top:50%;
+    text-align:center;
+    width:100%;
+    margin:12px auto 12px auto;
+}
+
+.sidebar {
+    position:fixed;
+    line-height:20px;
+    text-align:right;
+    top:0px;
+    height:100%;
+    width:100%;
+    right:-100%;
+    background:linear-gradient(to bottom, rgba(160,160,160,.98), rgba(180,180,180,.98));
+    transition: right 1s;
+    padding:24px 5px;	      
+    border-left:4px solid #888;
+    z-index:10;
+}
+
+.optionsIcon {
+    position:fixed;
+    text-align:right;
+    vertical-align: middle;
+    font-size:12px;
+    top:5;
     right:0;
-    width:10%;
-    padding:15px 5px;
+    padding:24px;
+    background-color:transparent;
+    border-style:none;
+    z-index:100;
+}
+
+.sendDetails {
+    text-align:left;
+    word-wrap:normal;
+    background-color:#fff;
+    opacity:0.5;
+    overflow:auto;
+    border:2px solid #CCC;
+    border-radius:4px;
+    -webkit-border-radius:4px;
+    width:80%;
+    margin:0 10% 0;
+    padding:10px;
 }
 
 .buttonDel {
@@ -116,6 +160,17 @@ pre {
     background-color:transparent;
     border-style:none;
 }
+
+.buttonOption {
+    color:#000;
+    font-size:18px;
+    margin:10px 5px;
+    padding:6px 12px;
+    background-color:transparent;
+    border-style:none;
+    border-right:4px solid #888;
+}
+
 
 .buttonCircle {
     color:#444444;
@@ -150,11 +205,13 @@ pre {
     margin:10px 5px;
     padding:6px 12px;
     background-color:#FFFFFF;
-    border-style:none;
-    border-radius:12px;
-    -webkit-border-radius:12px;
+    border-color:#CCCCCC; 
+    border-style:solid;
+    border-radius:4px;
+    -webkit-border-radius:4px;
     appearance:none;
     -webkit-appearance:none;
+    text-transform:uppercase;
 }
 
 .textInput {
@@ -170,33 +227,41 @@ pre {
     -webkit-appearance:none;
 }
 
+.light {
+    opacity:0.5;
+}
+
+.optionsIcon:focus, .optionsIcon:active,
 .textInput:focus, .textInput:active,
 .buttonDel:focus, .buttonDel:active,
+.buttonOption:focus, .buttonOption:active,
 .buttonCircle:focus, .buttonCircle:active {
     outline: 0; 
 }
 
-.hiddenButton {
+.hidden {
     /*visibility:hidden; /**/
     display:none; /**/
-}
-
-.hiddenDiv {
-    /*visibility:hidden; /**/
-    display:none; /**/
-    width:100%;
-
-}
-
-.settingsIcon {
-    width:30px; 
-    height:auto; 
 }
 
 .pairIcon {
     width:20px; 
     height:auto; 
     visibility:hidden;
+}
+
+.fa {
+  vertical-align: middle;
+}
+
+.dbbWaiting {
+    -ms-transform: rotate(270deg);
+    -webkit-transform: rotate(270deg);
+    transform: rotate(270deg);
+    position: relative;
+    right: 6px;
+    bottom: -8px;
+    width: 25px;
 }
 
 @keyframes fade {
@@ -214,5 +279,65 @@ pre {
 .blink {
     animation:fade 6s infinite;
     -webkit-animation:fade 6s infinite;
+}
+
+
+@-webkit-keyframes example {
+    0%   {color: #003};
+    20%  {color: #303;}
+    40%  {color: #009;}
+    60%  {color: #330;}
+    80%  {color: #099;}
+    100% {color: #003;}
+}
+
+@keyframes example {
+    0%   {color: #003};
+    20%  {color: #303;}
+    40%  {color: #009;}
+    60%  {color: #330;}
+    80%  {color: #099;}
+    100% {color: #003;}
+}
+
+.animationColor {
+    color: #003;
+    -webkit-animation-name: example;
+    -webkit-animation-duration: 30s; 
+    animation-name: example;
+    animation-duration: 30s;
+    animation-iteration-count: infinite;
+}
+
+  
+@keyframes ledBlink {
+    0%   {opacity:1;}
+    60%  {opacity:1;}
+    62%  {opacity:0;}
+    64%  {opacity:0;}
+    66%  {opacity:1;}
+    70%  {opacity:1;}
+    72%  {opacity:0;}
+    74%  {opacity:0;}
+    76%  {opacity:1;}
+    100% {opacity:1;}
+}
+
+.led img.top {
+    animation-name: ledBlink;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-duration: 4s;
+}
+
+.led {
+    position:relative;
+    bottom:7px;
+    right:34px;
+}
+
+.led img {
+    position:absolute;
+    display:inline;
 }
 
