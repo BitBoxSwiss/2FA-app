@@ -54,6 +54,14 @@ var ui = {
     pairBlinkDialog: null,
     waitingDialog: null,
     spinnerDialog: null,
+    serverUrlDialog: null,
+    serverUrlText: null,
+    serverUrlChangeButton: null,
+    serverUrlSubmitButton: null,
+    serverUrlCancelButton: null,
+    serverErrorSettingsButton: null,
+    serverErrorCancelButton: null,
+    serverErrorDialog: null,
     qrSequenceDialog: null,
     qrSequenceText: null,
     receiveDialog: null,
@@ -160,6 +168,11 @@ function init()
     }
     
     ui.optionsIcon.addEventListener("touchstart", toggleOptions, false);
+    ui.serverUrlChangeButton.addEventListener("touchstart", serverUrl, false);
+    ui.serverUrlSubmitButton.addEventListener("touchstart", serverUrlSubmit, false);
+    ui.serverUrlCancelButton.addEventListener("touchstart", serverUrlCancel, false);
+    ui.serverErrorSettingsButton.addEventListener("touchstart", serverUrl, false);
+    ui.serverErrorCancelButton.addEventListener("touchstart", serverUrlCancel, false);
     ui.receiveButton.addEventListener("touchstart", function(){ displayDialog(dialog.waiting) }, false);
     ui.sendButton.addEventListener("touchstart", function(){ displayDialog(dialog.waiting) }, false);
     ui.detailsButton.addEventListener("touchstart", details, false);
@@ -206,6 +219,8 @@ function fade(element) {
 }
 
 function startUp() {
+    
+    ui.serverUrlText.value = localData.server_url;
     
     if (localData.server_id === "" || localData.server_id === undefined) {
         console.log('State - no server id.');
@@ -286,8 +301,12 @@ function serverPoll() {
                     console.log('Data', ret.data[0].id, ":", payload);
                     parseData(payload);
                 }
+                serverPoll();
+            } else {
+                console.log('Could not connect to server', localData.server_url);
+                displayDialog(dialog.serverError);
+                setTimeout(serverPoll, 2000);
             }
-            serverPoll();
         }
     }
     req.send();
@@ -305,7 +324,7 @@ function serverSend(msg) {
                 console.log('Send server reply:', req);
             } else {
                 console.log('Send server error:', req);
-                displayDialog(dialog.connectPc);
+                displayDialog(dialog.serverError);
             }
         }
     }
@@ -350,7 +369,38 @@ function disconnect() {
     localData.verification_key = "";
     writeLocalData();
 }
+            
+function serverUrl() {
+    server_poll_pause = true;
+    hideOptionButtons();
+    displayDialog(dialog.serverUrl);
+}
 
+function serverUrlSubmit() {
+    server_poll_pause = false;
+    localData.server_url = ui.serverUrlText.value;
+    writeLocalData();
+    
+    if (localData.server_id === '')
+        displayDialog(dialog.connectPc);
+    else if (localData.verification_key === '')
+        displayDialog(dialog.pairDbb);
+    else
+        displayDialog(dialog.pairExists);
+
+    console.log('Setting server URL:', localData.server_url);
+}
+
+function serverUrlCancel() {
+    server_poll_pause = false;
+    
+    if (localData.server_id === '')
+        displayDialog(dialog.connectPc);
+    else if (localData.verification_key === '')
+        displayDialog(dialog.pairDbb);
+    else
+        displayDialog(dialog.waiting);
+}
 
 // ----------------------------------------------------------------------------
 // ECDH pairing UI
@@ -511,9 +561,7 @@ function startScan()
     hideOptionButtons();
     try {
     cordova.plugins.barcodeScanner.scan(
-		function (result)
-        {
-            console.log('scan', result.text);
+		function (result) {
             parseData(result.text);
         }, 
 		function (error) {
@@ -977,7 +1025,7 @@ function parseData(data)
             else
                 displayDialog(dialog.pairExists);
 
-            console.log('Setting ID:', data.id, ' Key:', data.key);
+            console.log('Setting ID:', data.id);
             //serverSend('{"id":"success"}');
             return;
         } 

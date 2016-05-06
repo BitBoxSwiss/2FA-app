@@ -57,6 +57,7 @@
                 <br><br><br><br>
                 <button id="disconnect-button" class="buttonOption">Disconnect and unpair</button><br>
                 <button id="scan-button" class="buttonOption">Manually scan QR codes</button><br>
+                <button id="server-url-change-button" class="buttonOption">Server settings</button><br>
             </div>
         </div>
 
@@ -88,11 +89,41 @@
         </div>
 
 
+        
+        <div id="server-error-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp; 
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp; 
+            <i class="fa fa-desktop fa-4x"></i>
+            <br><br>
+            <button id="server-error-settings-button" class="buttonSimple">Settings</button>
+            <button id="server-error-cancel-button" class="buttonSimple">Cancel</button>
+            <div class="infoText light">
+                Server communication error.
+            </div>
+        </div>
+
+
+        
+        <div id="server-url-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp; 
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp; 
+            <i class="fa fa-desktop fa-4x"></i>
+            <br><br>
+            <div class="infoText light">
+                Communication server:
+            </div>
+            <input type="text" id="server-url-text" class="textInput light" value="" />
+            <br>
+            <button id="server-url-submit-button" class="buttonSimple">Submit</button>
+            <button id="server-url-cancel-button" class="buttonSimple">Cancel</button>
+        </div>
+
+
 
         <div id="pair-dbb-dialog" class="hidden">
             <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp; 
             <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp; 
-            <img class="fa" style="opacity:0" src="img/dbb.png" width="30">
+            <img class="fa" style="opacity:0" src="img/dbb.png" width="30" />
             <span class="fa led">
                 <img src="img/dbb_blink.png" width="30" />
                 <img class="top" src="img/dbb.png" width="30" />
@@ -122,7 +153,7 @@
         <div id="pair-fail-dialog" class="hidden">
             <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp; 
             <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp; 
-            <img class="fa" src="img/dbb.png" width="30">
+            <img class="fa" src="img/dbb.png" width="30" />
             <br><br>
             <button id="pair-retry-button" class="buttonSimple">Retry</button>
             <div class="infoText light">
@@ -142,7 +173,7 @@
                 To end, tap the touch button on the Digital Bitbox.
             </div>
             <button id="blink-del-button" class="buttonDel">
-                <img src="img/erase_to_the_left_444.png" alt="Del" height="36px" width="36px">
+                <img src="img/erase_to_the_left_444.png" alt="Del" height="36px" width="36px" />
             </button>
             <button id="blink1-button" class="buttonCircle">1</button>
             <button id="blink2-button" class="buttonCircle">2</button>
@@ -182,7 +213,7 @@
         <div id="parse-error-dialog" class="hidden">
             <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp; 
             <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp; 
-            <img class="fa" style="opacity:0" src="img/dbb.png" width="30">
+            <img class="fa" style="opacity:0" src="img/dbb.png" width="30" />
             <span class="fa led">
                 <img src="img/dbb_blink.png" width="30" />
                 <img class="top" src="img/dbb.png" width="30" />
@@ -201,7 +232,7 @@
             <div class="">
                 <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp;&nbsp;&nbsp; 
                 <i class="fa fa-desktop fa-4x"></i>&nbsp;&nbsp;&nbsp;&nbsp; 
-                <img class="fa dbbWaiting" src="img/dbb.png" width="30">
+                <img class="fa dbbWaiting" src="img/dbb.png" width="30" />
             </div>
             <div class="infoText">
                 <br><big>Ready...</big><br><br><br><br>
