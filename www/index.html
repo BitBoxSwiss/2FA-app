@@ -265,8 +265,15 @@
             <div id="send-pin"></div>
             <div id="send-error" class="infoText"></div>
             <br>
-            <button id="details-button" class="buttonSimple">Details</button>
-            <button id="send-button" class="buttonSimple">Clear</button>
+            <span id="send-unlocked-mode">
+                <button id="send-details-button" class="buttonSimple">Details</button>
+                <button id="send-cancel-button" class="buttonSimple">Clear</button>
+            </span>
+            <span id="send-locked-mode" class="hidden">
+                <button id="lock-send-accept-button" class="buttonSimple"><b>Accept</b></button>
+                <button id="lock-send-details-button" class="buttonSimple">Details</button>
+                <button id="lock-send-cancel-button" class="buttonSimple">Cancel</button>
+            </span>
             <div id="send-details" class="sendDetails hidden"></div>
         </div>
     

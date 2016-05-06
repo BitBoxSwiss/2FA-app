@@ -73,8 +73,13 @@ var ui = {
     sendDetails: null,
     sendPin: null,
     sendError: null,
-    sendButton: null,
-    detailsButton: null,
+    sendCancelButton: null,
+    sendDetailsButton: null,
+    sendUnlockedMode: null,
+    sendLockedMode: null,
+    lockSendAcceptButton: null,
+    lockSendCancelButton: null,
+    lockSendDetailsButton: null,
     blinkDelButton: null,
     blink1Button: null,
     blink2Button: null,
@@ -131,6 +136,7 @@ var localData = {
 
 var localDataFile = null;
 var tx_details = "";
+var tx_lock_pin = "";
 var server_poll_pause = false;
 
 
@@ -174,8 +180,11 @@ function init()
     ui.serverErrorSettingsButton.addEventListener("touchstart", serverUrl, false);
     ui.serverErrorCancelButton.addEventListener("touchstart", serverUrlCancel, false);
     ui.receiveButton.addEventListener("touchstart", function(){ displayDialog(dialog.waiting) }, false);
-    ui.sendButton.addEventListener("touchstart", function(){ displayDialog(dialog.waiting) }, false);
-    ui.detailsButton.addEventListener("touchstart", details, false);
+    ui.sendCancelButton.addEventListener("touchstart", function(){ displayDialog(dialog.waiting) }, false);
+    ui.sendDetailsButton.addEventListener("touchstart", sendDetails, false);
+    ui.lockSendAcceptButton.addEventListener("touchstart", sendLockPin, false);
+    ui.lockSendCancelButton.addEventListener("touchstart", sendLockCancel, false);
+    ui.lockSendDetailsButton.addEventListener("touchstart", sendDetails, false);
     //ui.pairManualButton.addEventListener("touchstart", pairManual, false);
     ui.pairBeginButton.addEventListener("touchstart", pairBegin, false);
     ui.pairRetryButton.addEventListener("touchstart", function(){ displayDialog(dialog.pairDbb) }, false);
@@ -535,7 +544,7 @@ function writeLocalData() {
 // Transaction UI
 // 
 
-function details()
+function sendDetails()
 {
     ui.sendDetails.innerHTML = "<pre>" + tx_details + "</pre>";
     
@@ -545,6 +554,17 @@ function details()
         ui.sendDetails.style.display = "none";
 }
 
+function sendLockPin()
+{
+    serverSend('{"pin":"' + tx_lock_pin + '"}');
+    displayDialog(dialog.waiting);
+}
+
+function sendLockCancel()
+{
+    serverSend('{"pin":"abort"}');
+    displayDialog(dialog.waiting);
+}
 
 // ----------------------------------------------------------------------------
 // Scan UI
@@ -816,11 +836,17 @@ function process_verify_transaction(transaction, sign)
         }
     }
 
-    if (typeof sign.pin == "string")
+    if (typeof sign.pin == "string") {
+        ui.sendUnlockedMode.style.display = "none";
+        ui.sendLockedMode.style.display = "block";
         ui.sendPin.innerHTML = "<br><br>PIN:&nbsp;&nbsp;<b>" + sign.pin + "</b>";
-    else
+        tx_lock_pin = sign.pin;
+    } else {
+        ui.sendUnlockedMode.style.display = "block";
+        ui.sendLockedMode.style.display = "none";
         ui.sendPin.innerHTML = '';
-
+        tx_lock_pin = '';
+    }
     
     // Display short result
     ui.sendDetails.style.display = "none";
