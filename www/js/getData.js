@@ -5,9 +5,10 @@ onmessage = function(get) {
     req.open("GET", get.data, true);
     req.onreadystatechange = function() {
         if (req.readyState == 4) {
-            if (req.status == 200) {
+            if (req.status == 200)
                 postMessage([req.responseText, req.responseURL]);
-            }
+            else
+                postMessage(null);
         }
     }
     req.send();

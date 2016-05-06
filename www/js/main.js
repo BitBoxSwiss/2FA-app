@@ -635,17 +635,29 @@ function getInputs(transaction, sign) {
     for (var i = 1; i < unique_addresses.length; i++) {
         addrs += ',' + unique_addresses[i];
     }
-
-    var reply = false; 
+    
+    var reply = false,
+        blockexplorer_fail_limit = 2,
+        blockexplorer_count = 0;
     blockWorker.postMessage("https://blockexplorer.com/api/addrs/" + addrs + "/utxo");
     blockWorker.postMessage("https://insight.bitpay.com/api/addrs/" + addrs + "/utxo");
     blockWorker.postMessage("https://btc.blockr.io/api/v1/address/unspent/" + addrs);
     blockWorker.onmessage = function(e) {
+        if (e.data === null) {
+            blockexplorer_count++;
+            if (blockexplorer_count >= blockexplorer_fail_limit) {
+                console.log('Error: could not get address balances.');
+                blockWorker.terminate();
+                process_verify_transaction(transaction, sign);
+            }
+            return;
+        }
+        
         if (reply)
             return;
         reply = true;
+        
         var ret = JSON.parse(e.data[0]);
-
 
         // Reformat JSON from blockr.io 
         if (typeof ret.data === 'object') {
@@ -680,7 +692,7 @@ function getInputs(transaction, sign) {
                     input.balance = Number(ret[i].amount) * SAT2BTC;
                     input.address = ret[i].address;
                     input.txid = ret[i].txid;
-                   
+                    
                     var present = false;
                     for (var k = 0; k < pair.inputAddresses.length; k++) {
                         if (input.address === pair.inputAddresses[k].address) {
@@ -782,7 +794,15 @@ function process_verify_transaction(transaction, sign)
     
     // Calculate fee (inputs - outputs)
     res = "Fee:\n" + (total_in - total_out).toFixed(8) + " BTC\n";
-    if ((total_in - total_out) * SAT2BTC > WARNFEE) {
+    if ((total_in - total_out) < 0) {
+        tx_details = 'Fee:<span style="color: ' + DBB_COLOR_DANGER + ';">' +
+                     '\nDid not receive all input amounts from the blockchain explorers. ' +
+                     'The fee is equal to the total input amounts minus the total output amounts.\n' +
+                     'Check your internet settings and try again.\n</span>' + tx_details;
+        
+        err += '<br>WARNING: Could not calculate the fee.<br>';
+                
+    } else if ((total_in - total_out) * SAT2BTC > WARNFEE) {
         tx_details = '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '</span>' + tx_details;
     } else {
         tx_details = '<span style="color: ' + DBB_COLOR_BLACK + ';">' + res + '</span>' + tx_details;
@@ -809,8 +829,7 @@ function process_verify_transaction(transaction, sign)
         if (present === false) {
             if (errset === false) {
                 errset = true;
-                var errmsg = 'WARNING: Unknown data being signed!';
-                err += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + errmsg + '<br></span>';
+                err += '<br>WARNING: Unknown data being signed!<br>';
             }
             res = "Unknown: " + sign.data[j].hash;
             tx_details += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '<br></span>';
@@ -825,7 +844,7 @@ function process_verify_transaction(transaction, sign)
     console.log("2FA message received:\n" + JSON.stringify(sign, undefined, 4));
             
     if (err != '')
-        ui.sendError.innerHTML = "<pre>" + err + "</pre>";
+        ui.sendError.innerHTML = '<span style="color: ' + DBB_COLOR_DANGER + ';">' + err + '</span>';
 }
 
 
@@ -990,6 +1009,10 @@ function parseData(data)
             
             // Verify transaction
             if (typeof JSON.parse(plaintext).sign == "object") {
+        
+                displayDialog(dialog.connectCheck);
+                ui.connectCheck.innerHTML = 'Processing...';
+                
                 var transaction;
                 var sign = JSON.parse(plaintext).sign;
                 
