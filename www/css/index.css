@@ -65,12 +65,12 @@ body {
     margin:0px;
     text-align:center;
     word-wrap:break-word;
-    font-family: 'HelveticaNeue-Light', 'HelveticaNeue', Helvetica, Arial, sans-serif;
+    font-family: 'Source Sans Pro', 'HelveticaNeue-Light', 'HelveticaNeue', Helvetica, Arial, sans-serif;
     font-size:14px;
 }
         
 pre {
-    font-family: 'HelveticaNeue-Light', 'HelveticaNeue', Helvetica, Arial, sans-serif;
+    font-family: 'Source Sans Pro', 'HelveticaNeue-Light', 'HelveticaNeue', Helvetica, Arial, sans-serif;
     text-align: left;
     display: inline-block;
     zoom: 1;
@@ -94,10 +94,13 @@ pre {
 
 .header {
     position:fixed;
-    top:0;
+    color: #bbb;
     text-align:left;
     width:100%;
-    margin:12px auto 12px auto;
+    top:0;
+    background: linear-gradient(#222, #444);
+    border-bottom: 2px solid rgba(255,255,255,.3);
+    padding: 0 0 -2px;
     z-index:50;
 }
 
@@ -126,12 +129,13 @@ pre {
 
 .optionsIcon {
     position:fixed;
+    color: #bbb;
+    font-size:12px;
     text-align:right;
     vertical-align: middle;
-    font-size:12px;
     top:5;
     right:0;
-    padding:24px;
+    padding:12px 24px 24px;
     background-color:transparent;
     border-style:none;
     z-index:100;
