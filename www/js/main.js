@@ -111,7 +111,7 @@ var ui = {
     optionsIcon: null,
     scanButton: null, 
     splashScreen: null,
-    sidebar: null,
+    optionsSlider: null,
 };
 
 var dialog = {};
@@ -356,15 +356,15 @@ function displayDialog(D) {
 }
 
 function showOptionButtons() {
-    ui.sidebar.style.right = "0%";
+    ui.optionsSlider.style.top = "0%";
 }
 
 function hideOptionButtons() {
-    ui.sidebar.style.right = "-100%";
+    ui.optionsSlider.style.top = "-100%";
 }
 
 function toggleOptions() {
-    if (ui.sidebar.style.right == "-100%")
+    if (ui.optionsSlider.style.top == "-100%")
         showOptionButtons();
     else
         hideOptionButtons();
