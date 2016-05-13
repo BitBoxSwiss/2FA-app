@@ -919,6 +919,8 @@ function process_verify_transaction(transaction, sign)
             
     if (err != '')
         ui.sendError.innerHTML = '<span style="color: ' + DBB_COLOR_DANGER + ';">' + err + '</span>';
+    else
+        ui.sendError.innerHTML = '';
 }
 
 
