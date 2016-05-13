@@ -178,8 +178,8 @@ function init()
     ui.serverUrlCancelButton.addEventListener("touchstart", serverUrlCancel, false);
     ui.serverErrorSettingsButton.addEventListener("touchstart", serverUrl, false);
     ui.serverErrorCancelButton.addEventListener("touchstart", serverUrlCancel, false);
-    ui.receiveButton.addEventListener("touchstart", function(){ displayDialog(dialog.waiting) }, false);
-    ui.sendCancelButton.addEventListener("touchstart", function(){ displayDialog(dialog.waiting) }, false);
+    ui.receiveButton.addEventListener("touchstart", waiting, false);
+    ui.sendCancelButton.addEventListener("touchstart", waiting, false);
     ui.sendDetailsButton.addEventListener("touchstart", sendDetails, false);
     ui.lockSendAcceptButton.addEventListener("touchstart", sendLockPin, false);
     ui.lockSendCancelButton.addEventListener("touchstart", sendLockCancel, false);
@@ -187,13 +187,13 @@ function init()
     //ui.pairManualButton.addEventListener("touchstart", pairManual, false);
     ui.pairBeginButton.addEventListener("touchstart", pairBegin, false);
     ui.pairRetryButton.addEventListener("touchstart", function(){ displayDialog(dialog.pairDbb) }, false);
-    ui.pairSuccessButton.addEventListener("touchstart", function(){ displayDialog(dialog.waiting) }, false);
+    ui.pairSuccessButton.addEventListener("touchstart", waiting, false);
     ui.pairExistsPairButton.addEventListener("touchstart", function(){ displayDialog(dialog.pairDbb) }, false);
-    ui.pairExistsContinueButton.addEventListener("touchstart", function(){ displayDialog(dialog.waiting) }, false);
+    ui.pairExistsContinueButton.addEventListener("touchstart", waiting, false);
     ui.parseErrorPairButton.addEventListener("touchstart", function(){ displayDialog(dialog.pairDbb) }, false);
-    ui.parseErrorCancelButton.addEventListener("touchstart", function(){ displayDialog(dialog.waiting) }, false);
+    ui.parseErrorCancelButton.addEventListener("touchstart", waiting, false);
     ui.txErrorPairButton.addEventListener("touchstart", function(){ displayDialog(dialog.pairDbb) }, false);
-    ui.txErrorCancelButton.addEventListener("touchstart", function(){ displayDialog(dialog.waiting) }, false);
+    ui.txErrorCancelButton.addEventListener("touchstart", waiting, false);
     ui.disconnectButton.addEventListener("touchstart", disconnect, false);
     ui.connectScanButton.addEventListener("touchstart", connectScan, false);
     ui.scanButton.addEventListener("touchstart", startScan, false);
@@ -241,7 +241,7 @@ function startUp() {
     }
 
     else
-        displayDialog(dialog.waiting);
+        waiting();
         
     serverPoll();
 }
@@ -299,7 +299,7 @@ function serverPoll() {
         if (req.readyState == 4) {
             if (req.status == 200) {
                 var ret = JSON.parse(req.responseText);
-                //console.log('Recv:', ret.data, req.responseURL, localData.server_id);
+                console.log('Recv:', ret.data, req.responseURL, localData.server_id);
                 if (ret.data) {
                     // decode base64; not needed when payload is encrypted (?)
                     var payload = ret.data[0].payload;
@@ -378,6 +378,11 @@ function disconnect() {
     writeLocalData();
 }
             
+function waiting() {
+    server_poll_pause = false;
+    displayDialog(dialog.waiting);
+}
+
 function serverUrl() {
     server_poll_pause = true;
     hideOptionButtons();
@@ -407,7 +412,7 @@ function serverUrlCancel() {
     else if (localData.verification_key === '')
         displayDialog(dialog.pairDbb);
     else
-        displayDialog(dialog.waiting);
+        waiting();
 }
 
 // ----------------------------------------------------------------------------
@@ -554,13 +559,13 @@ function sendDetails()
 function sendLockPin()
 {
     serverSend('{"pin":"' + tx_lock_pin + '"}');
-    displayDialog(dialog.waiting);
+    waiting();
 }
 
 function sendLockCancel()
 {
     serverSend('{"pin":"abort"}');
-    displayDialog(dialog.waiting);
+    waiting();
 }
 
 // ----------------------------------------------------------------------------
@@ -1036,6 +1041,17 @@ function parseData(data)
             return;
         }
             
+        // Server requested action
+        if (typeof data.action == "string") {
+            console.log('server request:', data.action);
+            if (data.action == "clear") {
+                if (localData.verification_key === '')
+                    displayDialog(dialog.pairDbb);
+                else
+                    waiting();
+                return;
+            }
+        }
 
         // Sets up connection to desktop app
         if (typeof data.id == "string") {
@@ -1121,9 +1137,7 @@ function parseData(data)
             return;
         }
 
-
-        // Unknown input
-        console.log('Could not parse: ' + JSON.stringify(data, undefined, 4));
+        console.log('Unknown input: ' + JSON.stringify(data, undefined, 4));
         displayDialog(dialog.parseError);
     
     }
