@@ -1044,11 +1044,17 @@ function parseData(data)
         // Server requested action
         if (typeof data.action == "string") {
             console.log('server request:', data.action);
+            
             if (data.action == "clear") {
                 if (localData.verification_key === '')
                     displayDialog(dialog.pairDbb);
                 else
                     waiting();
+                return;
+            }
+            
+            if (data.action == "ping") {
+                serverSend('{"action":"pong"}');
                 return;
             }
         }
