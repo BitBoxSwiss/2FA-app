@@ -370,12 +370,15 @@ function toggleOptions() {
 }
 
 function disconnect() {
+    serverSend('{"action":"disconnect"}');
     hideOptionButtons();
-    displayDialog(dialog.connectPc);
-    localData.server_id = "";
-    localData.server_key = "";
-    localData.verification_key = "";
-    writeLocalData();
+    setTimeout(function() { 
+        displayDialog(dialog.connectPc);
+        localData.server_id = "";
+        localData.server_key = "";
+        localData.verification_key = "";
+        writeLocalData();
+    }, 500);
 }
             
 function waiting() {
@@ -1032,11 +1035,9 @@ function parseData(data)
             if (aes_cbc_b64_decrypt(data.tfa, localData.verification_key) === VERIFYPASS_CRYPT_TEST) {
                 console.log("Successfully paired.");
                 displayDialog(dialog.pairSuccess);
-                //serverSend('{"ecdh":"success"}');
             } else {
                 console.log("Pairing failed!");
                 displayDialog(dialog.pairFail);
-                //serverSend('{"ecdh":"fail"}');
             }
             return;
         }
@@ -1072,7 +1073,7 @@ function parseData(data)
                 displayDialog(dialog.pairExists);
 
             console.log('Setting ID:', data.id);
-            //serverSend('{"id":"success"}');
+            serverSend('{"id":"success"}');
             return;
         } 
         
