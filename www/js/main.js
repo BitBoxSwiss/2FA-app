@@ -71,7 +71,6 @@ var ui = {
     sendAmount: null,
     sendAddress: null,
     sendDetails: null,
-    sendPin: null,
     sendError: null,
     sendCancelButton: null,
     sendDetailsButton: null,
@@ -460,9 +459,7 @@ function pairBegin() {
     pair.blinkcode = [];
     blinkCodeStrength();
     displayDialog(dialog.pairBlink);
-    // TODO temp hack until dbb-app fixed
-    serverSend(ecdhPubkey());
-    //////////serverSend('{"ecdh":"' + ecdhPubkey() + '"}');
+    serverSend('{"ecdh":"' + ecdhPubkey() + '"}');
 }
 
 /*
@@ -839,14 +836,13 @@ function process_verify_transaction(transaction, sign)
     if (typeof sign.pin == "string") {
         ui.sendUnlockedMode.style.display = "none";
         ui.sendLockedMode.style.display = "block";
-        ui.sendPin.innerHTML = "<br><br>PIN:&nbsp;&nbsp;<b>" + sign.pin + "</b>";
         tx_lock_pin = sign.pin;
     } else {
         ui.sendUnlockedMode.style.display = "block";
         ui.sendLockedMode.style.display = "none";
-        ui.sendPin.innerHTML = '';
         tx_lock_pin = '';
     }
+    
     
     // Display short result
     ui.sendDetails.style.display = "none";
