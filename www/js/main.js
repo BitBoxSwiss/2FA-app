@@ -299,13 +299,12 @@ function serverPoll() {
         if (req.readyState == 4) {
             if (req.status == 200) {
                 var ret = JSON.parse(req.responseText);
-                console.log('Recv:', ret.data, req.responseURL, localData.server_id);
+                //console.log('Recv:', ret.data, localData.server_id);
                 if (ret.data) {
-                    // decode base64; not needed when payload is encrypted (?)
                     var payload = ret.data[0].payload;
-                    payload = new Buffer(payload, 'base64').toString('utf8');
-                    payload = new Buffer(payload, 'base64').toString('utf8');
-                    //payload = aes_cbc_b64_decrypt(payload, localData.server_key);
+                    //payload = new Buffer(payload, 'base64').toString('utf8');
+                    //payload = new Buffer(payload, 'base64').toString('utf8');
+                    payload = aes_cbc_b64_decrypt(payload, localData.server_key);
                     console.log('Data', ret.data[0].id, ":", payload);
                     parseData(payload);
                 }
@@ -321,9 +320,8 @@ function serverPoll() {
 }
 
 function serverSend(msg) {
-   
-    //msg = aes_cbc_b64_encrypt(msg, localData.server_key);
-    
+    //console.log('Sending to server:', msg);
+    msg = aes_cbc_b64_encrypt(msg, localData.server_key);
     var req = new XMLHttpRequest();
     req.open("GET", localData.server_url + '?c=data&uuid=' + localData.server_id + '&pl=' + msg + '&dt=1', true);
     req.onreadystatechange = function() {
@@ -535,7 +533,6 @@ function writeLocalData() {
         localDataFile.createWriter(function(fileWriter) {
             var blob = new Blob([JSON.stringify(localData)], {type:"text/plain"});
             fileWriter.write(blob);
-            console.log('Writing to file:', blob);
         })
     }
     catch(err) {
@@ -694,7 +691,6 @@ function getInputs(transaction, sign) {
         var a = new Bitcore.Script(tr.script)
                            .toAddress(COINNET)
                            .toString();
-        console.log('', a);
         addresses.push(a);
        
         var t = {};
@@ -1062,7 +1058,17 @@ function parseData(data)
 
         // Sets up connection to desktop app
         if (typeof data.id == "string") {
+            console.log('Setting ID:', data.id, ' - Key:', data.key);
             data.key = new Buffer(data.key, 'base64').toString('hex')
+            
+            // do hmac_sha256    
+            /*
+                var hash = Crypto.createHmac('sha256', data.key)
+                   .update(data.key)
+                   .digest('hex');
+            console.log('dbg', hash); 
+            */
+
             localData.server_id = data.id;
             localData.server_key = data.key;
             writeLocalData();
@@ -1072,7 +1078,7 @@ function parseData(data)
             else
                 displayDialog(dialog.pairExists);
 
-            console.log('Setting ID:', data.id);
+            console.log('Setting ID:', data.id, ' - Key:', data.key);
             serverSend('{"id":"success"}');
             return;
         } 
@@ -1153,5 +1159,4 @@ function parseData(data)
         displayDialog(dialog.parseError);
     }
 }
-
 
