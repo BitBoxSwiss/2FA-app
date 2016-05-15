@@ -115,7 +115,6 @@ pre {
 .optionsSlider {
     position:fixed;
     line-height:20px;
-    text-align:right;
     top:0px;
     height:100%;
     width:100%;
@@ -168,7 +167,9 @@ pre {
 
 .buttonOption {
     color:#000;
+    text-align:right;
     font-size:18px;
+    float:right;
     margin:10px 5px;
     padding:6px 12px;
     background-color:transparent;
