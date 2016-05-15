@@ -64,6 +64,9 @@ var ui = {
     serverErrorDialog: null,
     qrSequenceDialog: null,
     qrSequenceText: null,
+    randomNumberDialog: null,
+    randomNumber: null,
+    randomNumberButton: null,
     receiveDialog: null,
     receiveAddress: null,
     receiveButton: null,
@@ -178,6 +181,7 @@ function init()
     ui.serverUrlCancelButton.addEventListener("touchstart", serverUrlCancel, false);
     ui.serverErrorSettingsButton.addEventListener("touchstart", serverUrl, false);
     ui.serverErrorCancelButton.addEventListener("touchstart", serverUrlCancel, false);
+    ui.randomNumberButton.addEventListener("touchstart", randomNumberClear, false);
     ui.receiveButton.addEventListener("touchstart", waiting, false);
     ui.sendCancelButton.addEventListener("touchstart", waiting, false);
     ui.sendDetailsButton.addEventListener("touchstart", sendDetails, false);
@@ -365,6 +369,12 @@ function toggleOptions() {
         showOptionButtons();
     else
         hideOptionButtons();
+}
+
+function randomNumberClear()
+{
+    serverSend('{"random":"clear"}');
+    waiting();
 }
 
 function disconnect() {
@@ -1108,6 +1118,13 @@ function parseData(data)
                 return;
             }
             
+            // Verify random number
+            if (typeof JSON.parse(plaintext).random == "string") {
+                ui.randomNumber.innerHTML = JSON.parse(plaintext).random;
+                displayDialog(dialog.randomNumber);
+                return;
+            }
+
             // Verify transaction
             if (typeof JSON.parse(plaintext).sign == "object") {
         
