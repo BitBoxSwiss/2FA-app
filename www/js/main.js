@@ -51,6 +51,7 @@ var OP_CHECKMULTISIG = 'ae',
     OP_1 = '51';
 
 var ui = {
+    header: null,
     pairBlinkDialog: null,
     waitingDialog: null,
     spinnerDialog: null,
@@ -175,6 +176,7 @@ function init()
           dialog[u.replace('Dialog', '')] = element;
     }
     
+    ui.header.addEventListener("touchstart", hideOptionButtons, false);
     ui.optionsIcon.addEventListener("touchstart", toggleOptions, false);
     ui.serverUrlChangeButton.addEventListener("touchstart", serverUrl, false);
     ui.serverUrlSubmitButton.addEventListener("touchstart", serverUrlSubmit, false);
