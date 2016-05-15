@@ -805,7 +805,7 @@ function process_verify_transaction(transaction, sign)
     var total_in = 0, 
         total_out = 0,
         external_address = '',
-        external_amount = '',
+        external_amount = 0,
         err = '',
         res = '';
 
@@ -840,7 +840,7 @@ function process_verify_transaction(transaction, sign)
             res = address + "  " + amount / SAT2BTC + " BTC\n";
             tx_details += '<span style="color: ' + DBB_COLOR_WARN + ';">' + res + '</span>';
             external_address = address;
-            external_amount = amount / SAT2BTC;
+            external_amount += amount / SAT2BTC;
         } else {
             res = address + "  " + amount / SAT2BTC + " BTC (change address)\n";
             tx_details += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '</span>';
