@@ -248,7 +248,8 @@ function startUp() {
 
     else
         waiting();
-        
+
+    serverSendPlain('{"version":"' + VERSION + '"}');
     serverPoll();
 }
 
@@ -326,8 +327,12 @@ function serverPoll() {
 }
 
 function serverSend(msg) {
-    //console.log('Sending to server:', msg);
     msg = aes_cbc_b64_encrypt(msg, localData.server_key);
+    serverSendPlain(msg);
+}
+
+function serverSendPlain(msg) {
+    //console.log('Sending to server:', msg);
     var req = new XMLHttpRequest();
     req.open("GET", localData.server_url + '?c=data&uuid=' + localData.server_id + '&pl=' + msg + '&dt=1', true);
     req.onreadystatechange = function() {
