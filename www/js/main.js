@@ -249,7 +249,7 @@ function startUp() {
     else
         waiting();
 
-    serverSendPlain('{"version":"' + VERSION + '"}');
+    serverSend('{"version":"' + VERSION + '"}');
     serverPoll();
 }
 
@@ -326,26 +326,19 @@ function serverPoll() {
     req.send();
 }
 
-function serverSend(msg) {
+function serverSendEncrypt(msg) {
     msg = aes_cbc_b64_encrypt(msg, localData.server_key);
-    serverSendPlain(msg);
+    serverSend(msg);
 }
 
-function serverSendPlain(msg) {
-    //console.log('Sending to server:', msg);
+function serverSend(msg) {
+    console.log('Sending to server:', msg);
+    var rn = Math.floor((Math.random() * 100000) + 1);
+    var postContent = '&c=data&uuid=' + localData.server_id + '&pl=' + msg + '&dt=1';
     var req = new XMLHttpRequest();
-    req.open("GET", localData.server_url + '?c=data&uuid=' + localData.server_id + '&pl=' + msg + '&dt=1', true);
-    req.onreadystatechange = function() {
-        if (req.readyState == 4) {
-            if (req.status == 200) {
-                console.log('Send server reply:', req);
-            } else {
-                console.log('Send server error:', req);
-                displayDialog(dialog.serverError);
-            }
-        }
-    }
-    req.send();
+    req.open("POST", localData.server_url + '?rn=' + rn, true);
+    req.setRequestHeader('Content-type','application/text; charset=utf-8');
+    req.send(postContent);
 }
 
 
@@ -380,12 +373,12 @@ function toggleOptions() {
 
 function randomNumberClear()
 {
-    serverSend('{"random":"clear"}');
+    serverSendEncrypt('{"random":"clear"}');
     waiting();
 }
 
 function disconnect() {
-    serverSend('{"action":"disconnect"}');
+    serverSendEncrypt('{"action":"disconnect"}');
     hideOptionButtons();
     setTimeout(function() { 
         displayDialog(dialog.connectPc);
@@ -482,7 +475,7 @@ function pairBegin() {
     pair.blinkcode = [];
     blinkCodeStrength();
     displayDialog(dialog.pairBlink);
-    serverSend('{"ecdh":"' + ecdhPubkey() + '"}');
+    serverSendEncrypt('{"ecdh":"' + ecdhPubkey() + '"}');
 }
 
 /*
@@ -502,7 +495,7 @@ function pairManual() {
                 '- Enter those numbers here.\n' +
                 '- Stop anytime by tapping the Digital Bitbox\'s touch button.</pre>';
     
-    serverSend('{"ecdh":"manual"}');
+    serverSendEncrypt('{"ecdh":"manual"}');
 }
 */
 
@@ -575,13 +568,13 @@ function sendDetails()
 
 function sendLockPin()
 {
-    serverSend('{"pin":"' + tx_lock_pin + '"}');
+    serverSendEncrypt('{"pin":"' + tx_lock_pin + '"}');
     waiting();
 }
 
 function sendLockCancel()
 {
-    serverSend('{"pin":"abort"}');
+    serverSendEncrypt('{"pin":"abort"}');
     waiting();
 }
 
@@ -1068,7 +1061,7 @@ function parseData(data)
             }
             
             if (data.action == "ping") {
-                serverSend('{"action":"pong"}');
+                serverSendEncrypt('{"action":"pong"}');
                 return;
             }
         }
@@ -1096,7 +1089,7 @@ function parseData(data)
                 displayDialog(dialog.pairExists);
 
             console.log('Setting ID:', data.id, ' - Key:', data.key);
-            serverSend('{"id":"success"}');
+            serverSendEncrypt('{"id":"success"}');
             return;
         } 
         
