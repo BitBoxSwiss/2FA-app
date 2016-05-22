@@ -70,7 +70,8 @@ var ui = {
     randomNumberButton: null,
     receiveDialog: null,
     receiveAddress: null,
-    receiveButton: null,
+    receiveScanButton: null,
+    receiveClearButton: null,
     sendDialog: null,
     sendAmount: null,
     sendAddress: null,
@@ -188,7 +189,8 @@ function init()
     ui.serverErrorSettingsButton.addEventListener("touchstart", serverUrl, false);
     ui.serverErrorCancelButton.addEventListener("touchstart", serverUrlCancel, false);
     ui.randomNumberButton.addEventListener("touchstart", randomNumberClear, false);
-    ui.receiveButton.addEventListener("touchstart", waiting, false);
+    ui.receiveScanButton.addEventListener("touchstart", startScan, false);
+    ui.receiveClearButton.addEventListener("touchstart", waiting, false);
     ui.sendCancelButton.addEventListener("touchstart", waiting, false);
     ui.sendDetailsButton.addEventListener("touchstart", sendDetails, false);
     ui.lockSendAcceptButton.addEventListener("touchstart", sendLockPin, false);
