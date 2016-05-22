@@ -111,6 +111,10 @@ var ui = {
     txErrorDialog: null,
     txErrorPairButton: null,
     txErrorCancelButton: null,
+    bitcoinUriDialog: null,
+    bitcoinUriAddress: null,
+    bitcoinUriAmount: null,
+    bitcoinUriClearButton: null,
     optionsIcon: null,
     scanButton: null, 
     splashScreen: null,
@@ -200,6 +204,7 @@ function init()
     ui.parseErrorCancelButton.addEventListener("touchstart", waiting, false);
     ui.txErrorPairButton.addEventListener("touchstart", function(){ displayDialog(dialog.pairDbb) }, false);
     ui.txErrorCancelButton.addEventListener("touchstart", waiting, false);
+    ui.bitcoinUriClearButton.addEventListener("touchstart", waiting, false);
     ui.disconnectButton.addEventListener("touchstart", disconnect, false);
     ui.connectScanButton.addEventListener("touchstart", connectScan, false);
     ui.scanButton.addEventListener("touchstart", startScan, false);
@@ -991,6 +996,7 @@ function parseData(data)
             return;
         }
         
+        
         // QR sequence reader
         if (data.slice(0,2).localeCompare('QS') == 0) {
             var text = '';
@@ -1030,7 +1036,32 @@ function parseData(data)
             data = pair.QRtext.join('');
             pair.QRtext = [];
         }
+       
+
+        if (data.slice(0,8).localeCompare('bitcoin:') == 0) {
+            var address = '',
+                params,
+                amount;
+
+            if (data.indexOf('?') > -1) {
+                address = data.slice(8).split('?')[0];
+                params = data.split('?')[1].split('&').map(function(i) { return i.split('=');}).reduce(function(m,o){ m[o[0]] = o[1]; return m;},{});
+                amount = params.amount;
+            } else {
+                address = data.slice(8);
+            }
+
+            ui.bitcoinUriAddress.innerHTML = address;
             
+            if (amount)
+                ui.bitcoinUriAmount.innerHTML = '<big>' + amount + ' BTC</big><br><br><i class="fa fa-long-arrow-down fa-lg"></i><br><br>'
+            else
+                ui.bitcoinUriAmount.innerHTML = '';
+
+            displayDialog(dialog.bitcoinUri);
+            return;
+        }
+        
         
         data = JSON.parse(data);
         
