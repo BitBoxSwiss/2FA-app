@@ -856,6 +856,8 @@ function process_verify_transaction(transaction, sign)
             tx_details += '<span style="color: ' + DBB_COLOR_WARN + ';">' + res + '</span>';
             external_address = address;
             external_amount += amount / SAT2BTC;
+            if ((external_amount + "").split(".")[1].length > 8)
+                external_amount = external_amount.toFixed(8);
         } else {
             res = address + "  " + amount / SAT2BTC + " BTC (change address)\n";
             tx_details += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '</span>';
@@ -1032,8 +1034,12 @@ function parseData(data)
                 if (pair.QRtext[i] === undefined) {
                     inprogress = true;
                     text += ' _ ';
-                } else 
-                    text += '&#9724;';
+                } else {
+                    if (i == seqNumber)
+                        text += '<span style="color:' + DBB_COLOR_WARN + '">&#9724;</span>';
+                    else
+                        text += '<span style="color:' + DBB_COLOR_BLACK + '">&#9724;</span>';
+                }
             }
            
             if (inprogress) {
