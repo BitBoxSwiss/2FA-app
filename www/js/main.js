@@ -126,7 +126,8 @@ var dialog = {};
 
 var ecdh = Crypto.createECDH('secp256k1');
 
-var connectCheckingText = '<i class="fa fa-minus fa-spin fa-2x"></i><br><br><br>Checking connection...'; 
+var connectCheckingText = '<i class="fa fa-minus fa-spin fa-2x"></i><br><br><br>Checking connection...',
+    connectNoInternetText = 'No internet connection.';
 
 var pair = {
     blinkcode: [],
@@ -146,6 +147,7 @@ var localDataFile = null;
 var tx_details = "";
 var tx_lock_pin = "";
 var server_poll_pause = false;
+var verification_in_progress = false;
 
 
 // ----------------------------------------------------------------------------
@@ -293,12 +295,16 @@ function serverPoll() {
     }
     
     if (navigator.connection.type === Connection.NONE) {
-        displayDialog(dialog.connectCheck);
-        ui.connectCheck.innerHTML = 'No internet connection.';
+        if (!verification_in_progress)
+            displayDialog(dialog.connectCheck);
+        ui.connectCheck.innerHTML = connectNoInternetText;
         setTimeout(serverPoll, 500);
         return;
-    } else
+    } else {
+        if (ui.connectCheck.innerHTML == connectNoInternetText)
+            displayDialog(dialog.waiting);
         ui.connectCheck.innerHTML = connectCheckingText;
+    }
 
     if (localData.server_id === "" || localData.server_id === undefined) {
         console.log('Poll - no server id.');
@@ -398,6 +404,7 @@ function disconnect() {
             
 function waiting() {
     server_poll_pause = false;
+    verification_in_progress = false;
     displayDialog(dialog.waiting);
 }
 
@@ -591,6 +598,7 @@ function sendLockCancel()
 
 function connectScan()
 {
+    verification_in_progress = false;
     displayDialog(dialog.connectCheck);
     startScan();
 }
@@ -1044,6 +1052,8 @@ function parseData(data)
             var address = '',
                 params,
                 amount;
+                
+            verification_in_progress = true;
 
             if (data.indexOf('?') > -1) {
                 address = data.slice(8).split('?')[0];
@@ -1147,6 +1157,7 @@ function parseData(data)
            
             // Verify receiving address
             if (plaintext.slice(0,4).localeCompare('xpub') == 0) {
+                verification_in_progress = true;
                 process_verify_address(plaintext, data.type);
                 return;
             }
@@ -1191,6 +1202,7 @@ function parseData(data)
                 if (typeof JSON.parse(plaintext).pin == "string")
                     sign.pin = JSON.parse(plaintext).pin;
                     
+                verification_in_progress = true;
                 getInputs(transaction, sign); // calls process_verify_transaction() after getting input values
                 return;
             }
