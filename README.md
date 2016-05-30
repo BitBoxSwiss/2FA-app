@@ -1,16 +1,17 @@
-## Digital Bitbox | Two factor authentication app
+## Digital Bitbox | Smart Verification & Two Factor Authentication mobile app
 
 
-This mobile app works with the [Digital Bitbox](https://digitalbitbox.com) hardware wallet to provide the highest level of security.
+Use with the [Digital Bitbox](https://digitalbitbox.com) hardware wallet to provide the highest level of security.
 
 
 ## Installation
 
-- [Google Play Store for Android](https://play.google.com/store/apps/details?id=com.digitalbitbox.tfa)
-- App Store for iOS at a later date
-
+- [Android app](https://play.google.com/store/apps/details?id=com.digitalbitbox.tfa)
+- [iOS app](https://itunes.apple.com/us/app/digital-bitbox-2fa/id1079896740)
 
 ## Installation from source
+
+Note: The source code is under development and may not be compatible with stable releases of the desktop app or MCU firmware.
 
 Requires:
   1. [**Node.js** and **npm**](https://nodejs.org/) (tested with Node.js v4.2.2 and npm v2.14.7)
