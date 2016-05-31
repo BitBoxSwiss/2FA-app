@@ -2,6 +2,7 @@ hooks
 platforms
 plugins
 node_modules
+extra
 www/js/app.js
 test.js
 *.swp

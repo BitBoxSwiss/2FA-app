@@ -26,7 +26,7 @@
 
 'use strict';
 
-var VERSION = '1.0.1'; // match to version in config.xml
+var VERSION = '2.0.0'; // match to version in config.xml
 
 var Crypto = require("crypto");
 var Bitcore = require("bitcore-lib");
@@ -36,11 +36,11 @@ var Reverse = require("buffer-reverse");
 
 
 var PORT = 25698;
-var TIMEOUT = 1500; // ms
 var WARNFEE = 500000; // satoshis TODO update
 var SAT2BTC = 100000000; // conversion
 var COINNET = 'livenet';
 //var COINNET = 'testnet';
+var VERIFYPASS_CRYPT_TEST = 'Digital Bitbox 2FA';
 
 var DBB_COLOR_SAFE = "#0C0",
     DBB_COLOR_WARN = "#880",
@@ -50,63 +50,104 @@ var DBB_COLOR_SAFE = "#0C0",
 var OP_CHECKMULTISIG = 'ae',
     OP_1 = '51';
 
-
-var ws = null;
-var ws_opt = {
-        IP: null,
-        address: '',
-        name: '',
-        pollinterval: 1000, // msec
-    };
-
 var ui = {
-    pairIcon: null,
-    pairDialog: null,
-    pwDialog: null,
-    ipDialog: null,
-    pwText: null,
-    ipText: null,
-    clearButton: null,
-    cancelButton: null,
-    cancelIpButton: null,
-    detailsButton: null,
+    header: null,
+    pairBlinkDialog: null,
+    waitingDialog: null,
+    spinnerDialog: null,
+    serverUrlDialog: null,
+    serverUrlText: null,
+    serverUrlChangeButton: null,
+    serverUrlSubmitButton: null,
+    serverUrlCancelButton: null,
+    serverErrorSettingsButton: null,
+    serverErrorCancelButton: null,
+    serverErrorDialog: null,
+    qrSequenceDialog: null,
+    qrSequenceText: null,
+    randomNumberDialog: null,
+    randomNumber: null,
+    randomNumberButton: null,
+    receiveDialog: null,
+    receiveAddress: null,
+    receiveScanButton: null,
+    receiveClearButton: null,
+    sendDialog: null,
+    sendAmount: null,
+    sendAddress: null,
+    sendDetails: null,
+    sendError: null,
+    sendCancelButton: null,
+    sendDetailsButton: null,
+    sendUnlockedMode: null,
+    sendLockedMode: null,
+    lockSendAcceptButton: null,
+    lockSendCancelButton: null,
+    lockSendDetailsButton: null,
     blinkDelButton: null,
     blink1Button: null,
     blink2Button: null,
     blink3Button: null,
     blink4Button: null,
-    forgetButton: null,
-    submitPwButton: null,
-    submitIpButton: null,
-    ipScanButton: null,
-    ipManualButton: null,
-    ipForgetButton: null,
-    pairManualButton: null,
+    connectCheckDialog: null,
+    connectCheck: null,
+    connectPcDialog: null,
+    connectScanButton: null,
+    disconnectButton: null,
+    pairDbbDialog: null,
+    pairFailDialog: null,
+    pairSuccessDialog: null,
+    //pairManualButton: null,
     pairBeginButton: null,
-    pairCancelButton: null,
-    pairOptionButton: null,
+    pairRetryButton: null,
+    pairSuccessButton: null,
     pairStrength: null,
-    pairInfo: null,
-    settingsIcon: null,
-    optionButtons: null,
+    pairProgress: null,
+    pairExistsDialog: null,
+    pairExistsPairButton: null,
+    pairExistsContinueButton: null,
+    parseErrorDialog: null,
+    parseErrorPairButton: null,
+    parseErrorCancelButton: null,
+    txErrorDialog: null,
+    txErrorPairButton: null,
+    txErrorCancelButton: null,
+    bitcoinUriDialog: null,
+    bitcoinUriAddress: null,
+    bitcoinUriAmount: null,
+    bitcoinUriClearButton: null,
+    optionsIcon: null,
     scanButton: null, 
-    infoText: null,
     splashScreen: null,
+    optionsSlider: null,
 };
 
-var ecdh = Crypto.createECDH('secp256k1');
-var pair = {
-        blinkcode: [],
-        ipFile: null,
-        keyFile: null,
-        ip_saved: "",
-        key: "",
-        QRtext: [],
-        inputAddresses: [],
-    };
-        
-var res_detail = "";
+var dialog = {};
 
+var ecdh = Crypto.createECDH('secp256k1');
+
+var connectCheckingText = '<i class="fa fa-minus fa-spin fa-2x"></i><br><br><br>Checking connection...',
+    connectNoInternetText = 'No internet connection.';
+
+var pair = {
+    blinkcode: [],
+    serverFile: null,
+    QRtext: [],
+    inputAddresses: [],
+};
+
+var localData = {
+    server_id: "",
+    server_key: "",
+    server_url: "https://bitcoin.jonasschnelli.ch/dbb/server.php", /* default */
+    verification_key: "",
+};
+
+var localDataFile = null;
+var tx_details = "";
+var tx_lock_pin = "";
+var server_poll_pause = false;
+var verification_in_progress = false;
 
 
 // ----------------------------------------------------------------------------
@@ -117,7 +158,19 @@ document.addEventListener("deviceready", init, false);
 
 function init()
 {
-    
+    /*
+    // Automatically create user interface object from DOM id's in camelCase format
+    var ids = document.querySelectorAll('[id]');
+    Array.prototype.forEach.call( ids, function( element, i ) {
+        var id = element.id;
+        id = id.replace(/-([a-z])/g, function (g) { return g[1].toUpperCase(); });
+        ui[id] = element;     
+        if (id.includes('Dialog'))
+            dialog[id.replace('Dialog', '')] = element;
+    });
+    */
+
+    // Create user interface object
     for (var u in ui) {
       var id = u.replace(/([A-Z])/g, '-$1').toLowerCase();
       var element = document.getElementById(id);
@@ -125,42 +178,56 @@ function init()
         throw "Missing UI element: " + u;
       }
       ui[u] = element;
+        
+      if (u.includes('Dialog'))
+          dialog[u.replace('Dialog', '')] = element;
     }
     
-    if (navigator && navigator.splashscreen)
-        navigator.splashscreen.hide();
-
-    fade(ui.splashScreen); 
-	
-    ui.clearButton.addEventListener("touchstart", cancelClear, false);
-    ui.cancelButton.addEventListener("touchstart", cancelClear, false);
-    ui.cancelIpButton.addEventListener("touchstart", cancelClear, false);
-    //ui.changepwButton.addEventListener("touchstart", setKey, false);
-    ui.submitPwButton.addEventListener("touchstart", saveKey, false);
-    ui.submitIpButton.addEventListener("touchstart", setIP, false);
-    ui.forgetButton.addEventListener("touchstart", forget, false);
-    ui.settingsIcon.addEventListener("touchstart", displaySettings, false);
-    ui.detailsButton.addEventListener("touchstart", details, false);
-    ui.pairOptionButton.addEventListener("touchstart", pairEnter, false);
-    ui.pairBeginButton.addEventListener("touchstart", pairPc, false);
-    ui.pairCancelButton.addEventListener("touchstart", cancelClear, false);
-    ui.pairManualButton.addEventListener("touchstart", pairManual, false);
-    ui.ipForgetButton.addEventListener("touchstart", ipForget, false);
-    ui.ipManualButton.addEventListener("touchstart", ipManual, false);
-    ui.ipScanButton.addEventListener("touchstart", startScan, false);
+    ui.header.addEventListener("touchstart", hideOptionButtons, false);
+    ui.optionsIcon.addEventListener("touchstart", toggleOptions, false);
+    ui.serverUrlChangeButton.addEventListener("touchstart", serverUrl, false);
+    ui.serverUrlSubmitButton.addEventListener("touchstart", serverUrlSubmit, false);
+    ui.serverUrlCancelButton.addEventListener("touchstart", serverUrlCancel, false);
+    ui.serverErrorSettingsButton.addEventListener("touchstart", serverUrl, false);
+    ui.serverErrorCancelButton.addEventListener("touchstart", serverUrlCancel, false);
+    ui.randomNumberButton.addEventListener("touchstart", randomNumberClear, false);
+    ui.receiveScanButton.addEventListener("touchstart", startScan, false);
+    ui.receiveClearButton.addEventListener("touchstart", waiting, false);
+    ui.sendCancelButton.addEventListener("touchstart", waiting, false);
+    ui.sendDetailsButton.addEventListener("touchstart", sendDetails, false);
+    ui.lockSendAcceptButton.addEventListener("touchstart", sendLockPin, false);
+    ui.lockSendCancelButton.addEventListener("touchstart", sendLockCancel, false);
+    ui.lockSendDetailsButton.addEventListener("touchstart", sendDetails, false);
+    //ui.pairManualButton.addEventListener("touchstart", pairManual, false);
+    ui.pairBeginButton.addEventListener("touchstart", pairBegin, false);
+    ui.pairRetryButton.addEventListener("touchstart", function(){ displayDialog(dialog.pairDbb) }, false);
+    ui.pairSuccessButton.addEventListener("touchstart", waiting, false);
+    ui.pairExistsPairButton.addEventListener("touchstart", function(){ displayDialog(dialog.pairDbb) }, false);
+    ui.pairExistsContinueButton.addEventListener("touchstart", waiting, false);
+    ui.parseErrorPairButton.addEventListener("touchstart", function(){ displayDialog(dialog.pairDbb) }, false);
+    ui.parseErrorCancelButton.addEventListener("touchstart", waiting, false);
+    ui.txErrorPairButton.addEventListener("touchstart", function(){ displayDialog(dialog.pairDbb) }, false);
+    ui.txErrorCancelButton.addEventListener("touchstart", waiting, false);
+    ui.bitcoinUriClearButton.addEventListener("touchstart", waiting, false);
+    ui.disconnectButton.addEventListener("touchstart", disconnect, false);
+    ui.connectScanButton.addEventListener("touchstart", connectScan, false);
     ui.scanButton.addEventListener("touchstart", startScan, false);
-    ui.pairIcon.addEventListener("touchstart", pairStatus, false);
     ui.blinkDelButton.addEventListener("touchstart", blinkDel, false);
     ui.blink1Button.addEventListener("touchstart", blinkPress1, false);
     ui.blink2Button.addEventListener("touchstart", blinkPress2, false);
     ui.blink3Button.addEventListener("touchstart", blinkPress3, false);
     ui.blink4Button.addEventListener("touchstart", blinkPress4, false);
+
+    if (navigator && navigator.splashscreen)
+        navigator.splashscreen.hide();
+    fade(ui.splashScreen); 
     
-    loadFiles();
-    setInterval(wsFind, ws_opt.pollinterval);
+    loadLocalData();
+    
+    ui.connectCheck.innerHTML = connectCheckingText;
+    setTimeout(startUp, 2000);
 }
 
- 
 function fade(element) {
     var op = 1;  // opaque
     var timer = setInterval(function () {
@@ -174,9 +241,29 @@ function fade(element) {
     }, 20);
 }
 
+function startUp() {
+    
+    ui.serverUrlText.value = localData.server_url;
+    
+    if (localData.server_id === "" || localData.server_id === undefined) {
+        console.log('State - no server id.');
+        displayDialog(dialog.connectPc);
+    }
+    
+    else if (localData.verification_key === "" || localData.verification_key === undefined) {
+        console.log('State - not paired.');
+        displayDialog(dialog.pairDbb);
+    }
+
+    else
+        waiting();
+
+    serverSend('{"version":"' + VERSION + '"}');
+    serverPoll();
+}
 
 // ----------------------------------------------------------------------------
-// Network status
+// Network status (debugging)
 //
 
 function checkConnection() {
@@ -197,182 +284,161 @@ function checkConnection() {
 
 
 // ----------------------------------------------------------------------------
-// Websockets
+// Server communication
 //
-
-function wsStart() {
-    if (!ws || ws.readyState == ws.CLOSED) {
-        console.log('WebSocket found at ', ws_opt.address);
-        
-        ws = new WebSocket(ws_opt.address);
-    
-        ws.onopen = function () {
-            ui.pairIcon.style.visibility = "visible";
-            console.log('WebSocket openned');
-            wsSend('{"tfa": "Hello dbb app!", "version": "' + VERSION + '"}');
-        };
-
-        ws.onmessage = function (event) {
-            console.log('WebSocket received: ', event.data);
-            parseData(event.data);
-        };
-
-        ws.onerror = function () {
-            console.log('WebSocket error!');
-        };
-
-        ws.onclose = function (event) {
-            console.log('WebSocket closed ', event.code);
-            ui.pairIcon.style.visibility = "hidden";
-            ws_opt.address = '';
-            ws_opt.name = '';
-        };
-    }
-};
-
-
-function wsSend(message) {
-    if (ws) {
-        if (ws.readyState == ws.OPEN) {
-            ws.send(message);
-        }
-    }
-}
-
-
-var alternate = 0;
-function wsFind() {
-    if (navigator.connection.type === Connection.WIFI) {
-        if (ws_opt.IP) {
-            ws_opt.address = 'ws://' + ws_opt.IP + ':' + PORT;
-            ws_opt.name = ws_opt.IP;
-            //if (alternate = !alternate) {
-                wsStart();
-                //return;
-            //}
-        }
-        //ZeroConf.watch("_dbb._tcp.local.", wsFound); // does not reconnect if turn off/on wifi
+   
+function serverPoll() {
+       
+    if (server_poll_pause) {
+        setTimeout(serverPoll, 2000);
         return;
     }
-    checkConnection();
+    
+    if (navigator.connection.type === Connection.NONE) {
+        if (!verification_in_progress)
+            displayDialog(dialog.connectCheck);
+        ui.connectCheck.innerHTML = connectNoInternetText;
+        setTimeout(serverPoll, 500);
+        return;
+    } else {
+        if (ui.connectCheck.innerHTML == connectNoInternetText)
+            displayDialog(dialog.waiting);
+        ui.connectCheck.innerHTML = connectCheckingText;
+    }
+
+    if (localData.server_id === "" || localData.server_id === undefined) {
+        console.log('Poll - no server id.');
+        displayDialog(dialog.connectPc);
+        setTimeout(serverPoll, 2000);
+        return;
+    }
+    
+    var req = new XMLHttpRequest();
+    req.open("GET", localData.server_url + '?c=gd&uuid=' + localData.server_id + '&dt=1', true);
+    req.onreadystatechange = function() {
+        if (req.readyState == 4) {
+            if (req.status == 200) {
+                var ret = JSON.parse(req.responseText);
+                //console.log('Recv:', ret.data, localData.server_id);
+                if (ret.data) {
+                    var payload = ret.data[0].payload;
+                    //payload = new Buffer(payload, 'base64').toString('utf8');
+                    //payload = new Buffer(payload, 'base64').toString('utf8');
+                    payload = aes_cbc_b64_decrypt(payload, localData.server_key);
+                    console.log('Data', ret.data[0].id, ":", payload);
+                    parseData(payload);
+                }
+                serverPoll();
+            } else {
+                console.log('Could not connect to server', localData.server_url);
+                displayDialog(dialog.serverError);
+                setTimeout(serverPoll, 2000);
+            }
+        }
+    }
+    req.send();
 }
 
-
-function wsFound(obj) {
-    ws_opt.address = 'ws://' + obj.service.addresses[0] + ':' + obj.service.port;
-    //ws_opt.address = 'ws://' + obj.service.server + ':' + obj.service.port;
-    ws_opt.name = obj.service.name;
-    wsStart();
+function serverSendEncrypt(msg) {
+    msg = aes_cbc_b64_encrypt(msg, localData.server_key);
+    serverSend(msg);
 }
 
-
-//function mdnsAdvertise() {
-    //const PORT = 25698;
-    //ZeroConf.register("_http._tcp.local.", "DBBapp", PORT, "name=DBBapp_text");
-//}
+function serverSend(msg) {
+    console.log('Sending to server:', msg);
+    var rn = Math.floor((Math.random() * 100000) + 1);
+    var postContent = '&c=data&uuid=' + localData.server_id + '&pl=' + msg + '&dt=1';
+    var req = new XMLHttpRequest();
+    req.open("POST", localData.server_url + '?rn=' + rn, true);
+    req.setRequestHeader('Content-type','application/text; charset=utf-8');
+    req.send(postContent);
+}
 
 
 // ----------------------------------------------------------------------------
 // General UI
 //
 
-function showInfoDialog(text) {
-    ui.infoText.innerHTML = text;
-    hideOptionButtons();
-    hidePairDialog();
-    ui.pwDialog.style.display = "none";
-    ui.ipDialog.style.display = "none";
-    ui.detailsButton.style.display = "none";
-    ui.clearButton.style.display = "inline";
+function displayDialog(D) {
+    
+    //console.log("dialog", D);
+    
+    for (var d in dialog)
+        dialog[d].style.display = "none";
+    if (D)
+        D.style.display = "block"; 
 }
-
-
-function showPairDialog() {
-    ui.pairDialog.style.display = "block";
-    ui.infoText.innerHTML = "Number of LED blinks:";
-    pair.blinkcode = [];
-}
-
-
-function hidePairDialog() {
-    ui.settingsIcon.style.visibility = "visible";
-    ui.pairBeginButton.style.display = "none";
-    ui.pairCancelButton.style.display = "none";
-    ui.pairDialog.style.display = "none";
-    ui.pairStrength.innerHTML = "";
-    ui.pairInfo.innerHTML = "";
-    pair.blinkcode = [];
-}
-
-
-function showNoWSDialog() {
-    cancelClear();
-    ui.infoText.innerHTML = 'The IP address of the Digital Bitbox PC app is unknown.';
-    ui.ipScanButton.style.display = "inline";
-    ui.ipManualButton.style.display = "inline";
-    //ui.pairManualButton.style.display = "inline";
-    ui.pairCancelButton.style.display = "inline";
-    ui.settingsIcon.style.visibility = "hidden";
-    hideOptionButtons();
-}
-
-
-function showIpDialog() {
-    cancelClear();
-    ui.infoText.innerHTML = "Enter the IP address of your PC";
-    hideOptionButtons();
-    ui.settingsIcon.style.visibility = "hidden";
-    ui.ipDialog.style.display = "block";
-    ui.ipText.value = pair.ip_saved;
-}
-
-
-function hideIpDialog() {
-    ui.ipScanButton.style.display = "none";
-    ui.ipManualButton.style.display = "none";
-    //ui.pairManualButton.style.display = "none";
-    ui.settingsIcon.style.visibility = "visible";
-    ui.ipDialog.style.display = "none";
-    ui.ipText.value = "";
-}
-
-
-function showPasswordDialog() {
-    hideOptionButtons();
-    ui.settingsIcon.style.visibility = "hidden";
-    ui.pwDialog.style.display = "block";
-    //ui.pwText.focus();
-}
-
-
-function hidePasswordDialog() {
-    ui.settingsIcon.style.visibility = "visible";
-    ui.pwDialog.style.display = "none";
-    ui.pwText.value = "";
-}
-
 
 function showOptionButtons() {
-    ui.optionButtons.style.display = "inline";
+    ui.optionsSlider.style.top = "0%";
 }
-
 
 function hideOptionButtons() {
-    ui.optionButtons.style.display = "none";
+    ui.optionsSlider.style.top = "-100%";
 }
 
-
-function displaySettings() {
-    
-    wsSend('Touched settings button');
-    
-    if (ui.optionButtons.style.display == "inline") {
-        hideOptionButtons();
-    } else {
+function toggleOptions() {
+    if (ui.optionsSlider.style.top == "-100%")
         showOptionButtons();
-    }
+    else
+        hideOptionButtons();
 }
 
+function randomNumberClear()
+{
+    serverSendEncrypt('{"random":"clear"}');
+    waiting();
+}
+
+function disconnect() {
+    serverSendEncrypt('{"action":"disconnect"}');
+    hideOptionButtons();
+    setTimeout(function() { 
+        displayDialog(dialog.connectPc);
+        localData.server_id = "";
+        localData.server_key = "";
+        localData.verification_key = "";
+        writeLocalData();
+    }, 500);
+}
+            
+function waiting() {
+    server_poll_pause = false;
+    verification_in_progress = false;
+    displayDialog(dialog.waiting);
+}
+
+function serverUrl() {
+    server_poll_pause = true;
+    hideOptionButtons();
+    displayDialog(dialog.serverUrl);
+}
+
+function serverUrlSubmit() {
+    server_poll_pause = false;
+    localData.server_url = ui.serverUrlText.value;
+    writeLocalData();
+    
+    if (localData.server_id === '')
+        displayDialog(dialog.connectPc);
+    else if (localData.verification_key === '')
+        displayDialog(dialog.pairDbb);
+    else
+        displayDialog(dialog.pairExists);
+
+    console.log('Setting server URL:', localData.server_url);
+}
+
+function serverUrlCancel() {
+    server_poll_pause = false;
+    
+    if (localData.server_id === '')
+        displayDialog(dialog.connectPc);
+    else if (localData.verification_key === '')
+        displayDialog(dialog.pairDbb);
+    else
+        waiting();
+}
 
 // ----------------------------------------------------------------------------
 // ECDH pairing UI
@@ -393,7 +459,11 @@ function blinkCodeStrength() {
     } else {
         ui.pairStrength.innerHTML = "&nbsp;";
     }
-    ui.pairInfo.innerHTML = '<br><br>When ready to end:<br>Tap the touch button on the Digital Bitbox.</pre>';
+        
+    if (pair.blinkcode.length == 0)
+        ui.pairProgress.innerHTML = "&nbsp;";
+    else
+        ui.pairProgress.innerHTML = '<b>' + Array(pair.blinkcode.length + 1).join(" * ") + '</b>';
 }
 
 
@@ -403,265 +473,142 @@ function blinkPress3() { blinkPress(3); }
 function blinkPress4() { blinkPress(4); }
 function blinkPress(p) {
     pair.blinkcode.push(p);
-    ui.infoText.innerHTML = '<b>' + Array(pair.blinkcode.length + 1).join(" * ") + '</b>';
     blinkCodeStrength();
 }
-
 
 function blinkDel() {
-    if (pair.blinkcode.length == 0) {
-        cancelClear();
-    } else {
+    if (pair.blinkcode.length == 0)
+        displayDialog(dialog.pairDbb);
+    else
         pair.blinkcode.pop();
-        if (pair.blinkcode.length == 0) {
-            ui.infoText.innerHTML = "Number of LED blinks:";
-        } else {
-            ui.infoText.innerHTML = '<b>' + Array(pair.blinkcode.length + 1).join(" * ") + '</b>';
-        }
-    }
+    
     blinkCodeStrength();
 }
 
-
-function pairEnter() {
-    if (ws) {
-        if (ws.readyState == ws.OPEN) {
-            cancelClear();
-            ui.settingsIcon.style.visibility = "hidden";
-            ui.pairBeginButton.style.display = "inline";
-            ui.pairCancelButton.style.display = "inline";
-            ui.infoText.innerHTML = 'Your Digital Bitbox will begin to blink.<br><br><pre>- Count the number of blinks in each set.\n- Enter those numbers here.\n- Tap the touch button on the Digital Bitbox to end.</pre>';
-            return; 
-        }
-    }
-    
-    if (navigator.connection.type != Connection.WIFI) {
-        showInfoDialog('A WiFi connection is required for pairing.'); 
-        //ui.pairManualButton.style.display = "inline";
-        ui.settingsIcon.style.visibility = "hidden";
-    } else {
-        showNoWSDialog();
-    }
+function pairBegin() {
+    pair.blinkcode = [];
+    blinkCodeStrength();
+    displayDialog(dialog.pairBlink);
+    serverSendEncrypt('{"ecdh":"' + ecdhPubkey() + '"}');
 }
 
-function pairPc() {
-    ui.pairBeginButton.style.display = "none";
-    ui.pairCancelButton.style.display = "none";
-    if (ws) {
-        if (ws.readyState == ws.OPEN) {
-            wsSend('{"ecdh":"' + ecdhPubkey() + '"}');
-        }
-    }
-    showPairDialog();
-}
-
+/*
 function pairManual() {
-    cancelClear();
-    ui.settingsIcon.style.visibility = "hidden";
-    ui.pairBeginButton.style.display = "inline";
-    ui.pairCancelButton.style.display = "inline";
+    displayDialog(null);
     
     var pubkey = ecdhPubkey();
         pubkey = Base58Check.encode(new Buffer(pubkey.toString('hex'), 'hex'));
     
-    ui.infoText.innerHTML = 'Enter this in the PC app:<br><br>' +
-                            '<span style="color: ' + DBB_COLOR_WARN + ';">' +
-                            pubkey.slice(0, pubkey.length / 2) + '<br>' +
-                            pubkey.slice(pubkey.length / 2) + '</span>' +
-                            '<br><br><br>Then begin, and your Digital Bitbox will blink.<br><pre>' +
-                            '- Count the number of blinks in each set.\n' +
-                            '- Enter those numbers here.\n' +
-                            '- Stop anytime by tapping the Digital Bitbox\'s touch button.</pre>';
+    ui.pairManualText.innerHTML = 
+                'Enter this in the PC app:<br><br>' +
+                '<span style="color: ' + DBB_COLOR_WARN + ';">' +
+                pubkey.slice(0, pubkey.length / 2) + '<br>' +
+                pubkey.slice(pubkey.length / 2) + '</span>' +
+                '<br><br><br>Then begin, and your Digital Bitbox will blink.<br><pre>' +
+                '- Count the number of blinks in each set.\n' +
+                '- Enter those numbers here.\n' +
+                '- Stop anytime by tapping the Digital Bitbox\'s touch button.</pre>';
     
-    wsSend('{"ecdh":"manual"}');
+    serverSendEncrypt('{"ecdh":"manual"}');
 }
-
-function ipManual() {
-    showIpDialog();
-}
-
-function setIP() {
-    ws_opt.IP = ui.ipText.value;
-    pair.ip_saved = ui.ipText.value;
-    writeIp();
-    cancelClear();
-}
-
-function pairStatus() {
-    if (ui.clearButton.style.display == "inline"){
-        cancelClear();
-    } else {
-        showInfoDialog('Digital Bitbox PC app connected:<br>' + ws_opt.name);
-        ui.ipForgetButton.style.display = "inline";
-    }
-}
+*/
 
 
 // ----------------------------------------------------------------------------
-// Password UI
+// Local storage
 // 
 
-function setKey() {
-    ui.infoText.innerHTML = "";
-    showPasswordDialog();
-}
-
-
-function ipForget() {
-    ws.close();
-    ws_opt.IP = null;
-    pair.ip_saved = "";
-    writeIp();
-    cancelClear();
-}
-
-
-function forget() {
-    ws.close();
-    ws_opt.IP = null;
-    pair.key = "";
-    pair.ip_saved = "";
-    writeKey();
-    writeIp();
-    hideOptionButtons();
-    showInfoDialog("Settings erased");
-}
-
-
-function saveKey() {
-    try {
-        pair.key = ui.pwText.value;
-        writeKey();
-        hidePasswordDialog();
-        showInfoDialog("Password set");
-    }
-    catch(err) {
-        ui.infoText.innerHTML = err.message;
-        console.log(err.message);
-    }
-}
-           
-
-function cancelClear() {
-    hidePasswordDialog();
-    hidePairDialog();
-    hideIpDialog();
-    showInfoDialog("");
-    ui.ipForgetButton.style.display = "none";
-    ui.clearButton.style.display = "none";
-}
-
-
-function loadFiles() {
+function loadLocalData() {
 	try {
         window.resolveLocalFileSystemURL(cordova.file.dataDirectory, function(dir) {
-		    dir.getFile("keyfile.txt", {create:true}, function(file) {
-			    pair.keyFile = file;
-		        readKey(); 
-            })
-            dir.getFile("ipfile.txt", {create:true}, function(file) {
-			    pair.ipFile = file;
-		        readIp(); 
+            dir.getFile("localdata.txt", {create:true}, function(file) {
+			    localDataFile = file;
+		        readLocalData(); 
             })
 	    })
     }
     catch(err) {
-        ui.infoText.innerHTML = err.message;
         console.log(err.message);
     }
 }
 
-
-function readKey() {
-    try {    
-        pair.keyFile.file(function(file) {
+function readLocalData() {
+    try {
+        localDataFile.file(function(file) {
             var reader = new FileReader();
             reader.onloadend = function(e) {
-                pair.key = e.target.result;
+                if (e.target.result) {
+                    localData = JSON.parse(e.target.result);
+                } else {
+                    console.log('no file data to read');
+                }
             }
             reader.readAsText(file);
         })
-        return pair.key; 
     }
     catch(err) {
-        ui.infoText.innerHTML = err.message;
         console.log(err.message);
-        return null;
     }
 }
 
-
-function writeKey() {
+function writeLocalData() {
 	try {
-        if (!pair.keyFile) return;
-        pair.keyFile.createWriter(function(fileWriter) {
-            var blob = new Blob([pair.key], {type:"text/plain"});
+        if (!localDataFile) return;
+        localDataFile.createWriter(function(fileWriter) {
+            var blob = new Blob([JSON.stringify(localData)], {type:"text/plain"});
             fileWriter.write(blob);
         })
     }
     catch(err) {
-        ui.infoText.innerHTML = err.message;
         console.log(err.message);
     }
 }
 
-
-function readIp() {
-    try {    
-        pair.ipFile.file(function(file) {
-            var reader = new FileReader();
-            reader.onloadend = function(e) {
-                pair.ip_saved = e.target.result;
-                ws_opt.IP = e.target.result;
-            }
-            reader.readAsText(file);
-        })
-        return pair.ip_saved; 
-    }
-    catch(err) {
-        ui.infoText.innerHTML = err.message;
-        console.log(err.message);
-        return null;
-    }
-}
-
-
-function writeIp() {
-	try {
-        if (!pair.ipFile) return;
-        pair.ipFile.createWriter(function(fileWriter) {
-            var blob = new Blob([pair.ip_saved], {type:"text/plain"});
-            fileWriter.write(blob);
-        })
-    }
-    catch(err) {
-        ui.infoText.innerHTML = err.message;
-        console.log(err.message);
-    }
-}
 
 
 // ----------------------------------------------------------------------------
 // Transaction UI
 // 
 
-function details()
+function sendDetails()
 {
-    showInfoDialog("<pre>" + res_detail + "</pre>");
+    ui.sendDetails.innerHTML = "<pre>" + tx_details + "</pre>";
+    
+    if (ui.sendDetails.style.display === "none")
+        ui.sendDetails.style.display = "block";
+    else
+        ui.sendDetails.style.display = "none";
 }
 
+function sendLockPin()
+{
+    serverSendEncrypt('{"pin":"' + tx_lock_pin + '"}');
+    waiting();
+}
+
+function sendLockCancel()
+{
+    serverSendEncrypt('{"pin":"abort"}');
+    waiting();
+}
 
 // ----------------------------------------------------------------------------
 // Scan UI
 // 
 
+function connectScan()
+{
+    verification_in_progress = false;
+    displayDialog(dialog.connectCheck);
+    startScan();
+}
+
 function startScan()
 {
-	cancelClear();
+    hideOptionButtons();
     try {
     cordova.plugins.barcodeScanner.scan(
-		function (result)
-        {
+		function (result) {
             parseData(result.text);
         }, 
 		function (error) {
@@ -670,10 +617,8 @@ function startScan()
 	)
     }
     catch(err) {
-        ui.infoText.innerHTML = err.message;
         console.log(err.message);
     }
-
 }
 
 
@@ -681,14 +626,14 @@ function startScan()
 // Crypto
 // 
 
-function aes_cbc_b64_decrypt(ciphertext)
+function aes_cbc_b64_decrypt(ciphertext, key)
 {
     var res;
     try {
         var ub64 = new Buffer(ciphertext, "base64").toString("binary");
         var iv   = new Buffer(ub64.slice(0, 16), "binary");
         var enc  = new Buffer(ub64.slice(16), "binary");
-        var k    = new Buffer(pair.key, "hex");
+        var k    = new Buffer(key, "hex");
         var decipher = Crypto.createDecipheriv("aes-256-cbc", k, iv);
         var dec = decipher.update(enc) + decipher.final();
         res = dec.toString("utf8");
@@ -701,12 +646,11 @@ function aes_cbc_b64_decrypt(ciphertext)
     return res;
 }
 
-
-function aes_cbc_b64_encrypt(plaintext)
+function aes_cbc_b64_encrypt(plaintext, key)
 {
     try {
         var iv = Crypto.pseudoRandomBytes(16);
-        var k  = new Buffer(pair.key, "hex");
+        var k  = new Buffer(key, "hex");
         var cipher = Crypto.createCipheriv("aes-256-cbc", k, iv);
         var ciphertext = Buffer.concat([iv, cipher.update(plaintext), cipher.final()]);
         return ciphertext.toString("base64");
@@ -716,12 +660,10 @@ function aes_cbc_b64_encrypt(plaintext)
     }
 }
 
-
 function ecdhPubkey() {
     ecdh.generateKeys();
     return ecdh.getPublicKey('hex','compressed'); // 33 bytes
 }    
-
 
 function p2pkHash(script) {
     var hash = Crypto.createHash('sha256')
@@ -738,7 +680,6 @@ function p2pkHash(script) {
     return hash;
 }
 
-
 function multisigHash(script) {
     var hash = Crypto.createHash('sha256')
                .update(new Buffer(script, 'hex'))
@@ -754,16 +695,14 @@ function multisigHash(script) {
     return hash;
 }
 
-
 function multisig1of1(publickey) {
     var pushbytes = (publickey.length  / 2).toString(16);
     var script = OP_1 + pushbytes + publickey + OP_1 + OP_CHECKMULTISIG;
     return multisigHash(script);
 }
 
-
 function getInputs(transaction, sign) {
-    var blockWorker = new Worker("js/blockWorker.js");
+    var blockWorker = new Worker("js/getData.js");
     var addresses = [];
     var tx = [];
     pair.inputAddresses = [];
@@ -777,7 +716,6 @@ function getInputs(transaction, sign) {
         var a = new Bitcore.Script(tr.script)
                            .toAddress(COINNET)
                            .toString();
-        console.log('', a);
         addresses.push(a);
        
         var t = {};
@@ -791,17 +729,29 @@ function getInputs(transaction, sign) {
     for (var i = 1; i < unique_addresses.length; i++) {
         addrs += ',' + unique_addresses[i];
     }
-
-    var reply = false; 
+    
+    var reply = false,
+        blockexplorer_fail_limit = 2,
+        blockexplorer_count = 0;
     blockWorker.postMessage("https://blockexplorer.com/api/addrs/" + addrs + "/utxo");
     blockWorker.postMessage("https://insight.bitpay.com/api/addrs/" + addrs + "/utxo");
     blockWorker.postMessage("https://btc.blockr.io/api/v1/address/unspent/" + addrs);
     blockWorker.onmessage = function(e) {
+        if (e.data === null) {
+            blockexplorer_count++;
+            if (blockexplorer_count >= blockexplorer_fail_limit) {
+                console.log('Error: could not get address balances.');
+                blockWorker.terminate();
+                process_verify_transaction(transaction, sign);
+            }
+            return;
+        }
+        
         if (reply)
             return;
         reply = true;
+        
         var ret = JSON.parse(e.data[0]);
-
 
         // Reformat JSON from blockr.io 
         if (typeof ret.data === 'object') {
@@ -836,7 +786,7 @@ function getInputs(transaction, sign) {
                     input.balance = Number(ret[i].amount) * SAT2BTC;
                     input.address = ret[i].address;
                     input.txid = ret[i].txid;
-                   
+                    
                     var present = false;
                     for (var k = 0; k < pair.inputAddresses.length; k++) {
                         if (input.address === pair.inputAddresses[k].address) {
@@ -861,23 +811,23 @@ function getInputs(transaction, sign) {
 }
 
 
-
 // ----------------------------------------------------------------------------
-// Parse input
+// Parse input / verification
 // 
 
 function process_verify_transaction(transaction, sign) 
 {    
-    var res_short = '',
-        total_in = 0, 
+    var total_in = 0, 
         total_out = 0,
+        external_address = '',
+        external_amount = 0,
         err = '',
         res = '';
 
-    res_detail = '';
+    tx_details = '';
 
     // Get outputs and amounts
-    res_detail += "\nOutputs:\n";
+    tx_details += "\nOutputs:\n";
     for (var i = 0; i < transaction.outputs.length; i++) {
         var address, amount, present;
         address = transaction.outputs[i].script
@@ -889,7 +839,6 @@ function process_verify_transaction(transaction, sign)
         // Check if the output address is a change address
         present = false;
         for (var j = 0; j < sign.checkpub.length; j++) {
-            // TODO determine address type - get message from dbb-app 'wallet: type'?
             var checkaddress;
             var pubk = sign.checkpub[j].pubkey; 
             if (1) { // p2pkh
@@ -904,48 +853,65 @@ function process_verify_transaction(transaction, sign)
 
         if (!present || transaction.outputs.length == 1) {
             res = address + "  " + amount / SAT2BTC + " BTC\n";
-            res_detail += '<span style="color: ' + DBB_COLOR_WARN + ';">' + res + '</span>';
-            res_short += amount / SAT2BTC + " BTC\n" + address + "\n";
+            tx_details += '<span style="color: ' + DBB_COLOR_WARN + ';">' + res + '</span>';
+            external_address = address;
+            external_amount += amount / SAT2BTC;
+            if ((external_amount + "").split(".")[1].length > 8)
+                external_amount = external_amount.toFixed(8);
         } else {
             res = address + "  " + amount / SAT2BTC + " BTC (change address)\n";
-            res_detail += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '</span>';
+            tx_details += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '</span>';
         }
     }
 
-    if (res_short == "")
-        res_short = "Moving:\n\n" + total_out + " BTC\n(internally)\n\n";
-    else
-        res_short = "Sending:\n\n" + res_short;
+    if (typeof sign.pin == "string") {
+        ui.sendUnlockedMode.style.display = "none";
+        ui.sendLockedMode.style.display = "block";
+        tx_lock_pin = sign.pin;
+    } else {
+        ui.sendUnlockedMode.style.display = "block";
+        ui.sendLockedMode.style.display = "none";
+        tx_lock_pin = '';
+    }
+    
+    
+    // Display short result
+    ui.sendDetails.style.display = "none";
+    ui.sendAddress.innerHTML = external_address;
+    ui.sendAmount.innerHTML = external_amount;
+    displayDialog(dialog.send);
 
-
+    
     // Get input addresses and balances
-    res_detail += "\nInputs:\n";
+    tx_details += "\nInputs:\n";
     for (var i = 0; i < pair.inputAddresses.length; i++) {
         var address = pair.inputAddresses[i].address;
         var balance = pair.inputAddresses[i].balance;
         res = address + "  " + balance / SAT2BTC + " BTC\n";
-        res_detail += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '</span>';
+        tx_details += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '</span>';
         total_in += balance / SAT2BTC;
     }
-
-
+    
+    
     // Calculate fee (inputs - outputs)
-    res = "\nFee: " + (total_in - total_out).toFixed(8) + " BTC\n";
-    if ((total_in - total_out) * SAT2BTC > WARNFEE) {
-        res_short += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '<br></span>';
+    res = "Fee:\n" + (total_in - total_out).toFixed(8) + " BTC\n";
+    if ((total_in - total_out) < 0) {
+        tx_details = 'Fee:<span style="color: ' + DBB_COLOR_DANGER + ';">' +
+                     '\nDid not receive all input amounts from the blockchain explorers. ' +
+                     'The fee is equal to the total input amounts minus the total output amounts.\n' +
+                     'Check your internet settings and try again.\n</span>' + tx_details;
+        
+        err += '<br>WARNING: Could not calculate the fee.<br>';
+                
+    } else if ((total_in - total_out) * SAT2BTC > WARNFEE) {
+        tx_details = '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '</span>' + tx_details;
     } else {
-        res_short += '<span style="color: ' + DBB_COLOR_BLACK + ';">' + res + '<br></span>';
+        tx_details = '<span style="color: ' + DBB_COLOR_BLACK + ';">' + res + '</span>' + tx_details;
     }
-
-    if (typeof sign.pin == "string")
-        res_short += "\nLock code:  " + sign.pin + "\n";
-
-    showInfoDialog("<pre>" + res_short + "</pre>");
-    ui.detailsButton.style.display = "inline";
 
 
     // Verify that input hashes match meta utx
-    res_detail += "\nHashes to be signed:\n";
+    tx_details += "\nHashes to sign:\n";
     var errset = false;
     for (var j = 0; j < sign.data.length; j++) {
         var present = false;
@@ -964,53 +930,52 @@ function process_verify_transaction(transaction, sign)
         if (present === false) {
             if (errset === false) {
                 errset = true;
-                var errmsg = 'WARNING: Unknown data being signed!';
-                err += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + errmsg + '<br><br></span>';
+                err += '<br>WARNING: Unknown data being signed!<br>';
             }
             res = "Unknown: " + sign.data[j].hash;
-            res_detail += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '<br></span>';
+            tx_details += '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '<br></span>';
         } else {
             res = sign.data[j].hash;
-            res_detail += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '<br></span>';
+            tx_details += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '<br></span>';
         }
     }
     
-    res_detail = err + res_short + "\n" + res_detail;
     
     // Extra information
     console.log("2FA message received:\n" + JSON.stringify(sign, undefined, 4));
             
-    if (err != '') {
-        showInfoDialog("<pre>" + err + res_short + "</pre>");
-        ui.detailsButton.style.display = "inline";
-    }
+    if (err != '')
+        ui.sendError.innerHTML = '<span style="color: ' + DBB_COLOR_DANGER + ';">' + err + '</span>';
+    else
+        ui.sendError.innerHTML = '';
 }
 
 
-function process_2FA_pairing(parse) 
+function process_dbb_pairing(parse) 
 {    
     var ciphertext = parse.verifypass.ciphertext;
     var pubkey = parse.verifypass.ecdh;
     var ecdh_secret = ecdh.computeSecret(pubkey, 'hex', 'hex');
     
-    pair.key = Crypto.createHash('sha256').update(new Buffer(ecdh_secret, 'hex')).digest('hex');
-    pair.key = Crypto.createHash('sha256').update(new Buffer(pair.key, 'hex')).digest('hex');
-    var k = new Buffer(pair.key, "hex");
+    localData.verification_key = Crypto.createHash('sha256').update(new Buffer(ecdh_secret, 'hex')).digest('hex');
+    localData.verification_key = Crypto.createHash('sha256').update(new Buffer(localData.verification_key, 'hex')).digest('hex');
+    var k = new Buffer(localData.verification_key, "hex");
     for (var i = 0; i < pair.blinkcode.length; i++) {
         k[i % 32] ^= pair.blinkcode[i]; 
     }
-    pair.key = k.toString('hex');
-    pair.key = Crypto.createHash('sha256').update(new Buffer(pair.key, 'ascii')).digest('hex');
-    pair.key = Crypto.createHash('sha256').update(new Buffer(pair.key, 'hex')).digest('hex');
+    localData.verification_key = k.toString('hex');
+    localData.verification_key = Crypto.createHash('sha256').update(new Buffer(localData.verification_key, 'ascii')).digest('hex');
+    localData.verification_key = Crypto.createHash('sha256').update(new Buffer(localData.verification_key, 'hex')).digest('hex');
 
-    writeKey();
+    writeLocalData();
     
-    if (aes_cbc_b64_decrypt(ciphertext) === 'Digital Bitbox 2FA')
-        parse = "Successfully paired.";
-    else 
-        parse = "Pairing failed!";
-    
-    return parse;
+    if (aes_cbc_b64_decrypt(ciphertext, localData.verification_key) === VERIFYPASS_CRYPT_TEST) {
+        console.log("Successfully paired.");
+        displayDialog(dialog.pairSuccess);
+    } else {
+        console.log("Pairing failed!");
+        displayDialog(dialog.pairFail);
+    }
 }
   
 
@@ -1023,23 +988,36 @@ function process_verify_address(plaintext, type)
     else 
         parse = multisig1of1(parse);
     
-    if (!parse) {
-        return 'Error: Coin network not defined.';
-    }
-    return "<pre>Receiving address:\n\n" + parse + "\n\n</pre>";
+    if (parse) 
+        parse = "<pre>" + parse + "</pre>";
+    else
+        parse = 'Error: Coin network not defined.';
+
+    ui.receiveAddress.innerHTML = parse;
+    displayDialog(dialog.receive);
 }
 
 
 function parseData(data)
 {
     try {
+            
+        if (data == '') {
+            server_poll_pause = false;
+            pair.QRtext = [];
+            return;
+        }
         
+        
+        // QR sequence reader
         if (data.slice(0,2).localeCompare('QS') == 0) {
             var text = '';
             var inprogress = false;
             var seqNumber = data[2]; // {0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ}
             var seqTotal = data[3];
-           
+          
+            server_poll_pause = true;
+
             if (isNaN(seqNumber)) {
                 seqNumber = seqNumber.toUpperCase().charCodeAt(0);
                 seqNumber = seqNumber - "A".charCodeAt(0) + 10;
@@ -1056,53 +1034,153 @@ function parseData(data)
                 if (pair.QRtext[i] === undefined) {
                     inprogress = true;
                     text += ' _ ';
-                } else 
-                    text += '&#9724;';
+                } else {
+                    if (i == seqNumber)
+                        text += '<span style="color:' + DBB_COLOR_WARN + '">&#9724;</span>';
+                    else
+                        text += '<span style="color:' + DBB_COLOR_BLACK + '">&#9724;</span>';
+                }
             }
            
             if (inprogress) {
-                showInfoDialog('continue scanning<br>' + text);
-                ui.clearButton.style.display = "none";
-                setTimeout(startScan, TIMEOUT);
+                ui.qrSequenceText.innerHTML = 'continue scanning<br>' + text;
+                displayDialog(dialog.qrSequence);
+                setTimeout(startScan, 1500); // ms
                 return;
             }
-
+            
             data = pair.QRtext.join('');
             pair.QRtext = [];
         }
+       
 
+        if (data.slice(0,8).localeCompare('bitcoin:') == 0) {
+            var address = '',
+                params,
+                amount;
+                
+            verification_in_progress = true;
+
+            if (data.indexOf('?') > -1) {
+                address = data.slice(8).split('?')[0];
+                params = data.split('?')[1].split('&').map(function(i) { return i.split('=');}).reduce(function(m,o){ m[o[0]] = o[1]; return m;},{});
+                amount = params.amount;
+            } else {
+                address = data.slice(8);
+            }
+
+            ui.bitcoinUriAddress.innerHTML = address;
+            
+            if (amount)
+                ui.bitcoinUriAmount.innerHTML = '<big>' + amount + ' BTC</big><br><br><i class="fa fa-long-arrow-down fa-lg"></i><br><br>'
+            else
+                ui.bitcoinUriAmount.innerHTML = '';
+
+            displayDialog(dialog.bitcoinUri);
+            return;
+        }
+        
         
         data = JSON.parse(data);
-
-
-        if (typeof data.ip == "string") {
-            console.log('Setting websocket IP', data.ip);
-            ui.ipText.value = data.ip;
-            setIP();
-            return;
-        } 
         
-        if (typeof data.verifypass == "object") {
-            showInfoDialog(process_2FA_pairing(data));
-            return;
-        } 
 
-        if (typeof data.echo == "string") {
-            // Echo verification
-            var ciphertext = data.echo;
-            var plaintext = aes_cbc_b64_decrypt(ciphertext);
-
-            if (plaintext === ciphertext) {
-                showInfoDialog('Could not parse:<br><br>' + JSON.stringify(plaintext, undefined, 4));
-                return; 
+        // Tests if already paired to Digital Bitbox
+        if (typeof data.tfa == "string") {
+            console.log('tfa value', data.tfa);
+            if (aes_cbc_b64_decrypt(data.tfa, localData.verification_key) === VERIFYPASS_CRYPT_TEST) {
+                console.log("Successfully paired.");
+                displayDialog(dialog.pairSuccess);
+            } else {
+                console.log("Pairing failed!");
+                displayDialog(dialog.pairFail);
             }
+            return;
+        }
             
-            if (plaintext.slice(0,4).localeCompare('xpub') == 0) {
-                showInfoDialog(process_verify_address(plaintext, data.type));
+        // Server requested action
+        if (typeof data.action == "string") {
+            console.log('server request:', data.action);
+            
+            if (data.action == "clear") {
+                if (localData.verification_key === '')
+                    displayDialog(dialog.pairDbb);
+                else
+                    waiting();
                 return;
             }
             
+            if (data.action == "ping") {
+                serverSendEncrypt('{"action":"pong"}');
+                return;
+            }
+        }
+
+        // Sets up connection to desktop app
+        if (typeof data.id == "string") {
+            console.log('Setting ID:', data.id, ' - Key:', data.key);
+            data.key = new Buffer(data.key, 'base64').toString('hex')
+            
+            // do hmac_sha256    
+            /*
+                var hash = Crypto.createHmac('sha256', data.key)
+                   .update(data.key)
+                   .digest('hex');
+            console.log('dbg', hash); 
+            */
+
+            localData.server_id = data.id;
+            localData.server_key = data.key;
+            writeLocalData();
+            
+            if (localData.verification_key === '')
+                displayDialog(dialog.pairDbb);
+            else
+                displayDialog(dialog.pairExists);
+
+            console.log('Setting ID:', data.id, ' - Key:', data.key);
+            serverSendEncrypt('{"id":"success"}');
+            return;
+        } 
+        
+
+        // Finalizes ECDH pairing to Digital Bitbox
+        if (typeof data.verifypass == "object") {
+            process_dbb_pairing(data);
+            return;
+        } 
+
+
+        if (typeof data.echo == "string") {
+            // Echo verification of data
+            var ciphertext = data.echo;
+            var plaintext = aes_cbc_b64_decrypt(ciphertext, localData.verification_key);
+
+            if (plaintext === ciphertext) {
+                console.log('Could not parse: ' + JSON.stringify(plaintext, undefined, 4));
+                displayDialog(dialog.parseError);
+                return; 
+            }
+           
+            // Verify receiving address
+            if (plaintext.slice(0,4).localeCompare('xpub') == 0) {
+                verification_in_progress = true;
+                process_verify_address(plaintext, data.type);
+                return;
+            }
+            
+            // Verify random number
+            if (typeof JSON.parse(plaintext).random == "string") {
+                ui.randomNumber.innerHTML = JSON.parse(plaintext).random;
+                displayDialog(dialog.randomNumber);
+                return;
+            }
+
+            // Verify transaction
             if (typeof JSON.parse(plaintext).sign == "object") {
+        
+                displayDialog(dialog.connectCheck);
+                ui.connectCheck.innerHTML = 'Processing...';
+                
                 var transaction;
                 var sign = JSON.parse(plaintext).sign;
                 
@@ -1117,7 +1195,8 @@ function parseData(data)
                                  .toString('hex');
                     
                     if (hash !== sign.meta) {
-                        showInfoDialog('Error: mismatched verification data.');
+                        console.log('Error: mismatched verification data.');
+                        displayDialog(dialog.txError);
                         return;
                     }
                      
@@ -1129,28 +1208,23 @@ function parseData(data)
                 if (typeof JSON.parse(plaintext).pin == "string")
                     sign.pin = JSON.parse(plaintext).pin;
                     
-                getInputs(transaction, sign);
+                verification_in_progress = true;
+                getInputs(transaction, sign); // calls process_verify_transaction() after getting input values
                 return;
             }
                 
-            showInfoDialog('No operation for:<br><br>' + JSON.stringify(data, undefined, 4));
+            console.log('No operation for: ' + JSON.stringify(data, undefined, 4));
+            displayDialog(dialog.parseError);
             return;
         }
 
-        showInfoDialog('Could not parse:<br><br>' + JSON.stringify(data, undefined, 4));
-        console.log('Could not parse data.');
+        console.log('Unknown input: ' + JSON.stringify(data, undefined, 4));
+        displayDialog(dialog.parseError);
     
     }
     catch(err) {
-        console.log(err);
-        showInfoDialog(data);
-    }
-
-    if (data == "") {
-        pair.QRtext = [];
-        showInfoDialog("--");
-        ui.settingsIcon.style.visibility = "hidden";
+        console.log(err, data);
+        displayDialog(dialog.parseError);
     }
 }
-
 
