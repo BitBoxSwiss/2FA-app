@@ -38,35 +38,37 @@
         <splash src="www/img/splash.png" density="land-hdpi"/>
         <splash src="www/img/splash.png" density="land-xhdpi"/> 
     </platform>
-    
+
     <platform name="ios">
-        <icon height="180" src="www/img/icons/logo-square-ios/AppIcon.appiconset/Icon-60@3x.png" width="180" />
-        <icon height="60" src="www/img/icons/logo-square-ios/Icon-60.png" width="60" />
-        <icon height="120" src="www/img/icons/logo-square-ios/AppIcon.appiconset/Icon-60@2x.png" width="120" />
-        <icon height="76" src="www/img/icons/logo-square-ios/AppIcon.appiconset/Icon-76.png" width="76" />
-        <icon height="152" src="www/img/icons/logo-square-ios/AppIcon.appiconset/Icon-76@2x.png" width="152" />
-        <icon height="40" src="www/img/icons/logo-square-ios/AppIcon.appiconset/Icon-40.png" width="40" />
-        <icon height="80" src="www/img/icons/logo-square-ios/AppIcon.appiconset/Icon-40@2x.png" width="80" />
-        <icon height="57" src="www/img/icons/logo-square-ios/Icon.png" width="57" />
-        <icon height="114" src="www/img/icons/logo-square-ios/Icon@2x.png" width="114" />
-        <icon height="72" src="www/img/icons/logo-square-ios/Icon-72.png" width="72" />
-        <icon height="144" src="www/img/icons/logo-square-ios/Icon-72@2x.png" width="144" />
-        <icon height="29" src="www/img/icons/logo-square-ios/AppIcon.appiconset/Icon-Small.png" width="29" />
-        <icon height="58" src="www/img/icons/logo-square-ios/AppIcon.appiconset/Icon-Small@2x.png" width="58" />
-        <icon height="50" src="www/img/icons/logo-square-ios/Icon-Small-50.png" width="50" />
-        <icon height="100" src="www/img/icons/logo-square-ios/Icon-Small-50@2x.png" width="100" />
-        <!-- TODO - - not tested -->
-        <splash src="www/img/splash.png" width="320" height="480"/>
-        <splash src="www/img/splash.png" width="640" height="960"/>
-        <splash src="www/img/splash.png" width="768" height="1024"/>
-        <splash src="www/img/splash.png" width="1536" height="2048"/>
-        <splash src="www/img/splash.png" width="1024" height="768"/>
-        <splash src="www/img/splash.png" width="2048" height="1536"/>
-        <splash src="www/img/splash.png" width="640" height="1136"/>
-        <splash src="www/img/splash.png" width="750" height="1334"/>
-        <splash src="www/img/splash.png" width="1242" height="2208"/>
-        <splash src="www/img/splash.png" width="2208" height="1242"/>
+        <splash src="img/ios/splash/Default~iphone.png" width="320" height="480"/>
+        <splash src="img/ios/splash/Default@2x~iphone.png" width="640" height="960"/>
+        <splash src="img/ios/splash/Default-Portrait~ipad.png" width="768" height="1024"/>
+        <splash src="img/ios/splash/Default-Portrait@2x~ipad.png" width="1536" height="2048"/>
+        <splash src="img/ios/splash/Default-568h@2x~iphone.png" width="640" height="1136"/>
+        <splash src="img/ios/splash/Default-667h.png" width="750" height="1334"/>
+        <splash src="img/ios/splash/Default-736h.png" width="1242" height="2208"/>
+
+        <icon src="img/ios/icon/icon-AppStore@2x.png" />
+        <icon src="img/ios/icon/icon-Small.png" width="29" height="29" />
+        <icon src="img/ios/icon/icon-Small@2x.png" width="58" height="58" />
+        <icon src="img/ios/icon/icon-Small@3x.png" width="87" height="87" />
+        <icon src="img/ios/icon/icon-Small-40.png" width="40" height="40" />
+        <icon src="img/ios/icon/icon-Small-40@2x.png" width="80" height="80" />
+        <icon src="img/ios/icon/icon-Small-50.png" width="50" height="50" />
+        <icon src="img/ios/icon/icon-Small-50@2x.png" width="100" height="100" />
+        <icon src="img/ios/icon/icon-72.png" width="72" height="72" />
+        <icon src="img/ios/icon/icon-72@2x.png" width="144" height="144" />
+        <icon src="img/ios/icon/icon-60@2x.png" width="60" height="60"/>
+        <icon src="img/ios/icon/icon-60@2x.png" width="120" height="120"/>
+        <icon src="img/ios/icon/icon-60@3x.png" width="180" height="180"/>
+        <icon src="img/ios/icon/icon-83.5@2x.png" width="167" height="167"/>
+        <icon src="img/ios/icon/icon-76.png" width="76" height="76"/>
+        <icon src="img/ios/icon/icon-76@2x.png" width="152" height="152"/>
+        <icon src="img/ios/icon/icon-AppStore.png" width="512" height="512"/>
+        <icon src="img/ios/icon/icon-AppStore@2x.png" width="1024" height="1024"/>
+        <icon src="img/ios/icon/icon-AppStore@2x.png" width="1800" height="1800"/>
     </platform>
+
     <preference name="xwalkVersion" value="15+" />
     <preference name="xwalkCommandLine" value="--disable-pull-to-refresh-effect" />
     <preference name="xwalkMode" value="embedded" />
