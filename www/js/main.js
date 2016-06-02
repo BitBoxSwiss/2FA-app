@@ -60,7 +60,7 @@ var ui = {
     optionCheckUpdateButton: null,
     optionServerUrlChangeButton: null,
     serverUrlSubmitButton: null,
-    serverUrlCancelButton: null,
+    serverUrlRestoreDefaultButton: null,
     serverErrorSettingsButton: null,
     serverErrorCancelButton: null,
     serverErrorDialog: null,
@@ -147,10 +147,13 @@ var update_server = {
     reply: {message: '', url: '', version: ''},
 };
 
+var default_server_url = "https://digitalbitbox.com/smartverification/index.php",
+    comserver_url = "";
+
 var localData = {
     server_id: "",
     server_key: "",
-    server_url: "https://digitalbitbox.com/smartverification/", /* default */
+    server_url: "",
     verification_key: "",
 };
 
@@ -199,7 +202,7 @@ function init()
     ui.optionCheckUpdateButton.addEventListener("touchstart", function(){ checkUpdatePost(true) }, false);
     ui.optionServerUrlChangeButton.addEventListener("touchstart", serverUrl, false);
     ui.serverUrlSubmitButton.addEventListener("touchstart", serverUrlSubmit, false);
-    ui.serverUrlCancelButton.addEventListener("touchstart", serverUrlCancel, false);
+    ui.serverUrlRestoreDefaultButton.addEventListener("touchstart", serverUrlRestoreDefault, false);
     ui.serverErrorSettingsButton.addEventListener("touchstart", serverUrl, false);
     ui.serverErrorCancelButton.addEventListener("touchstart", serverUrlCancel, false);
     ui.checkUpdateUrlFollowButton.addEventListener("touchstart", followUrl, false);
@@ -256,8 +259,8 @@ function fade(element) {
 }
 
 function startUp() {
-    
-    ui.serverUrlText.value = localData.server_url;
+    comserver_url = (localData.server_url == '') ? default_server_url : localData.server_url;
+    ui.serverUrlText.value = comserver_url;
     
     if (localData.server_id === "" || localData.server_id === undefined) {
         console.log('State - no server id.');
@@ -302,7 +305,7 @@ function checkConnection() {
 //
    
 function serverPoll() {
-       
+
     if (server_poll_pause) {
         setTimeout(serverPoll, 2000);
         return;
@@ -327,30 +330,36 @@ function serverPoll() {
         return;
     }
     
-    var req = new XMLHttpRequest();
-    req.open("GET", localData.server_url + '?c=gd&uuid=' + localData.server_id + '&dt=1', true);
-    req.onreadystatechange = function() {
-        if (req.readyState == 4) {
-            if (req.status == 200) {
-                var ret = JSON.parse(req.responseText);
-                //console.log('Recv:', ret.data, localData.server_id);
-                if (ret.data) {
-                    var payload = ret.data[0].payload;
-                    //payload = new Buffer(payload, 'base64').toString('utf8');
-                    //payload = new Buffer(payload, 'base64').toString('utf8');
-                    payload = aes_cbc_b64_decrypt(payload, localData.server_key);
-                    console.log('Data', ret.data[0].id, ":", payload);
-                    parseData(payload);
+    try {
+        var req = new XMLHttpRequest();
+        req.open("GET", comserver_url + '?c=gd&uuid=' + localData.server_id + '&dt=1', true);
+        req.onreadystatechange = function() {
+            if (req.readyState == 4) {
+                if (req.status == 200) {
+                    var ret = JSON.parse(req.responseText);
+                    //console.log('Recv:', ret.data, localData.server_id);
+                    if (ret.data) {
+                        var payload = ret.data[0].payload;
+                        payload = aes_cbc_b64_decrypt(payload, localData.server_key);
+                        console.log('Data', ret.data[0].id, ":", payload);
+                        parseData(payload);
+                    }
+                    serverPoll();
+                } else {
+                    console.log('Could not connect to communication server', comserver_url);
+                    displayDialog(dialog.serverError);
+                    setTimeout(serverPoll, 2000);
                 }
-                serverPoll();
-            } else {
-                console.log('Could not connect to communication server', localData.server_url);
-                displayDialog(dialog.serverError);
-                setTimeout(serverPoll, 2000);
             }
         }
+        req.send();
     }
-    req.send();
+    catch(err) {
+        console.log('Could not connect to communication server', comserver_url);
+        console.log(err.message);
+        displayDialog(dialog.serverError);
+        setTimeout(serverPoll, 2000);
+    }
 }
 
 function serverSendEncrypt(msg) {
@@ -363,7 +372,7 @@ function serverSend(msg) {
     var rn = Math.floor((Math.random() * 100000) + 1);
     var postContent = '&c=data&uuid=' + localData.server_id + '&pl=' + msg + '&dt=1';
     var req = new XMLHttpRequest();
-    req.open("POST", localData.server_url + '?rn=' + rn, true);
+    req.open("POST", comserver_url + '?rn=' + rn, true);
     req.setRequestHeader('Content-type','application/text; charset=utf-8');
     req.send(postContent);
 }
@@ -384,7 +393,7 @@ function checkUpdatePost(display) {
                     displayDialog(dialog.checkUpdate);
                 }
             } else {
-                console.log('Could not connect to update server', localData.server_url);
+                console.log('Could not connect to update server', comserver_url);
                 displayDialog(dialog.serverError);
             }
         }
@@ -462,7 +471,8 @@ function serverUrl() {
 
 function serverUrlSubmit() {
     server_poll_pause = false;
-    localData.server_url = ui.serverUrlText.value;
+    localData.server_url = (ui.serverUrlText.value == default_server_url) ? '' : ui.serverUrlText.value;
+    comserver_url = (localData.server_url == '') ? default_server_url : localData.server_url;
     writeLocalData();
     
     if (localData.server_id === '')
@@ -470,9 +480,14 @@ function serverUrlSubmit() {
     else if (localData.verification_key === '')
         displayDialog(dialog.pairDbb);
     else
-        displayDialog(dialog.pairExists);
+        waiting();
 
-    console.log('Setting server URL:', localData.server_url);
+    console.log('Setting server URL:', comserver_url);
+}
+
+function serverUrlRestoreDefault() {
+    ui.serverUrlText.value = default_server_url;
+    serverUrlSubmit();
 }
 
 function serverUrlCancel() {
