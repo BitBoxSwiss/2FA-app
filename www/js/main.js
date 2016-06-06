@@ -57,12 +57,17 @@ var ui = {
     spinnerDialog: null,
     serverUrlDialog: null,
     serverUrlText: null,
-    serverUrlChangeButton: null,
+    optionCheckUpdateButton: null,
+    optionServerUrlChangeButton: null,
     serverUrlSubmitButton: null,
     serverUrlCancelButton: null,
     serverErrorSettingsButton: null,
     serverErrorCancelButton: null,
     serverErrorDialog: null,
+    checkUpdateDialog: null,
+    checkUpdateText: null,
+    checkUpdateUrlFollowButton: null,
+    checkUpdateCloseButton: null,
     qrSequenceDialog: null,
     qrSequenceText: null,
     randomNumberDialog: null,
@@ -93,7 +98,6 @@ var ui = {
     connectCheck: null,
     connectPcDialog: null,
     connectScanButton: null,
-    disconnectButton: null,
     pairDbbDialog: null,
     pairFailDialog: null,
     pairSuccessDialog: null,
@@ -117,7 +121,8 @@ var ui = {
     bitcoinUriAmount: null,
     bitcoinUriClearButton: null,
     optionsIcon: null,
-    scanButton: null, 
+    optionScanButton: null, 
+    optionDisconnectButton: null,
     splashScreen: null,
     optionsSlider: null,
 };
@@ -136,10 +141,16 @@ var pair = {
     inputAddresses: [],
 };
 
+var update_server = {
+    key: "KhT9Lzb6o4EYLOVAqjXVWENt6rVKruFVUVJmtxkXKXG5eDw",
+    url: "https://digitalbitbox.com/mobile-app/update.json",
+    reply: {message: '', url: '', version: ''},
+};
+
 var localData = {
     server_id: "",
     server_key: "",
-    server_url: "https://bitcoin.jonasschnelli.ch/dbb/server.php", /* default */
+    server_url: "https://digitalbitbox.com/smartverification/", /* default */
     verification_key: "",
 };
 
@@ -185,11 +196,14 @@ function init()
     
     ui.header.addEventListener("touchstart", hideOptionButtons, false);
     ui.optionsIcon.addEventListener("touchstart", toggleOptions, false);
-    ui.serverUrlChangeButton.addEventListener("touchstart", serverUrl, false);
+    ui.optionCheckUpdateButton.addEventListener("touchstart", function(){ checkUpdatePost(true) }, false);
+    ui.optionServerUrlChangeButton.addEventListener("touchstart", serverUrl, false);
     ui.serverUrlSubmitButton.addEventListener("touchstart", serverUrlSubmit, false);
     ui.serverUrlCancelButton.addEventListener("touchstart", serverUrlCancel, false);
     ui.serverErrorSettingsButton.addEventListener("touchstart", serverUrl, false);
     ui.serverErrorCancelButton.addEventListener("touchstart", serverUrlCancel, false);
+    ui.checkUpdateUrlFollowButton.addEventListener("touchstart", followUrl, false);
+    ui.checkUpdateCloseButton.addEventListener("touchstart", waiting, false);
     ui.randomNumberButton.addEventListener("touchstart", randomNumberClear, false);
     ui.receiveScanButton.addEventListener("touchstart", startScan, false);
     ui.receiveClearButton.addEventListener("touchstart", waiting, false);
@@ -208,10 +222,10 @@ function init()
     ui.parseErrorCancelButton.addEventListener("touchstart", waiting, false);
     ui.txErrorPairButton.addEventListener("touchstart", function(){ displayDialog(dialog.pairDbb) }, false);
     ui.txErrorCancelButton.addEventListener("touchstart", waiting, false);
+    ui.optionDisconnectButton.addEventListener("touchstart", disconnect, false);
     ui.bitcoinUriClearButton.addEventListener("touchstart", waiting, false);
-    ui.disconnectButton.addEventListener("touchstart", disconnect, false);
     ui.connectScanButton.addEventListener("touchstart", connectScan, false);
-    ui.scanButton.addEventListener("touchstart", startScan, false);
+    ui.optionScanButton.addEventListener("touchstart", startScan, false);
     ui.blinkDelButton.addEventListener("touchstart", blinkDel, false);
     ui.blink1Button.addEventListener("touchstart", blinkPress1, false);
     ui.blink2Button.addEventListener("touchstart", blinkPress2, false);
@@ -258,7 +272,7 @@ function startUp() {
     else
         waiting();
 
-    serverSend('{"version":"' + VERSION + '"}');
+    checkUpdatePost(false);
     serverPoll();
 }
 
@@ -330,7 +344,7 @@ function serverPoll() {
                 }
                 serverPoll();
             } else {
-                console.log('Could not connect to server', localData.server_url);
+                console.log('Could not connect to communication server', localData.server_url);
                 displayDialog(dialog.serverError);
                 setTimeout(serverPoll, 2000);
             }
@@ -352,6 +366,32 @@ function serverSend(msg) {
     req.open("POST", localData.server_url + '?rn=' + rn, true);
     req.setRequestHeader('Content-type','application/text; charset=utf-8');
     req.send(postContent);
+}
+
+function checkUpdatePost(display) {
+    console.log('Checking for update.');
+    var rn = Math.floor((Math.random() * 100000) + 1);
+    var req = new XMLHttpRequest();
+    req.onreadystatechange = function() {
+        if (req.readyState == 4) {
+            if (req.status == 200) {
+                update_server.reply = JSON.parse(req.responseText);
+                ui.checkUpdateText.innerHTML = update_server.reply.message;
+                ui.checkUpdateUrlFollowButton.style.display = ((update_server.reply.url == '') ? 'none' : 'inline-block');
+                hideOptionButtons();
+                if (display) {
+                    server_poll_pause = true;
+                    displayDialog(dialog.checkUpdate);
+                }
+            } else {
+                console.log('Could not connect to update server', localData.server_url);
+                displayDialog(dialog.serverError);
+            }
+        }
+    }
+    req.open("POST", update_server.url + '?rn=' + rn, true);
+    req.setRequestHeader('Content-type','application/text; charset=utf-8');
+    req.send(JSON.stringify({version: VERSION, target: 'smartverification', key: update_server.key}));
 }
 
 
@@ -406,6 +446,12 @@ function waiting() {
     server_poll_pause = false;
     verification_in_progress = false;
     displayDialog(dialog.waiting);
+}
+
+function followUrl() {
+    console.log('Following Url', update_server.reply.url);
+    cordova.InAppBrowser.open(update_server.reply.url, '_blank', 'location=yes');
+    waiting();
 }
 
 function serverUrl() {
