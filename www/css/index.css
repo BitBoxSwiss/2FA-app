@@ -97,6 +97,7 @@ pre {
     color: #bbb;
     text-align:left;
     width:100%;
+    height:50px;
     top:0;
     background: linear-gradient(#222, #444);
     border-bottom: 2px solid rgba(255,255,255,.3);
