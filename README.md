@@ -33,6 +33,7 @@ cordova plugin add cordova-plugin-crosswalk-webview  #  supports websockets
 cordova plugin add cordova-plugin-network-information
 cordova plugin add cordova-plugin-whitelist
 cordova plugin add cordova-plugin-inappbrowser
+cordova plugin add cordova-plugin-statusbar
 npm install bitcore-lib ripemd160 bs58check buffer-reverse
 browserify www/js/main.js -o www/js/app.js
 cordova build android
