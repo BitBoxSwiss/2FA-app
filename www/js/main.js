@@ -1028,13 +1028,13 @@ function process_dbb_pairing(parse)
     localData.verification_key = Crypto.createHash('sha256').update(new Buffer(localData.verification_key, 'ascii')).digest('hex');
     localData.verification_key = Crypto.createHash('sha256').update(new Buffer(localData.verification_key, 'hex')).digest('hex');
 
-    writeLocalData();
-    
     if (aes_cbc_b64_decrypt(ciphertext, localData.verification_key) === VERIFYPASS_CRYPT_TEST) {
         console.log("Successfully paired.");
+        writeLocalData();
         displayDialog(dialog.pairSuccess);
     } else {
         console.log("Pairing failed!");
+        localData.verification_key = '';
         displayDialog(dialog.pairFail);
     }
 }
@@ -1206,7 +1206,9 @@ function parseData(data)
 
         // Finalizes ECDH pairing to Digital Bitbox
         if (typeof data.verifypass == "object") {
-            process_dbb_pairing(data);
+            // Silently drop if already paired
+            if (localData.verification_key === '')
+                process_dbb_pairing(data);
             return;
         } 
 
