@@ -173,7 +173,7 @@ document.addEventListener("deviceready", init, false);
 function init()
 {
     /*
-    // Automatically create user interface object from DOM id's in camelCase format
+    // Automatically create ui object from IDs in camelCase format
     var ids = document.querySelectorAll('[id]');
     Array.prototype.forEach.call( ids, function( element, i ) {
         var id = element.id;
@@ -196,7 +196,14 @@ function init()
       if (u.includes('Dialog'))
           dialog[u.replace('Dialog', '')] = element;
     }
-    
+
+    // Add visual feedback for touches
+    var elements = document.getElementsByClassName('buttonSimple');
+    Array.prototype.filter.call(elements, function(e){
+        e.addEventListener("touchstart", function(){ touchStart(e) }, false);
+        e.addEventListener("touchend", function(){ touchEnd(e) }, false);
+    });
+
     ui.header.addEventListener("touchstart", hideOptionButtons, false);
     ui.optionsIcon.addEventListener("touchstart", toggleOptions, false);
     ui.optionCheckUpdateButton.addEventListener("touchstart", function(){ checkUpdatePost(true) }, false);
@@ -243,6 +250,19 @@ function init()
     
     ui.connectCheck.innerHTML = connectCheckingText;
     setTimeout(startUp, 2000);
+}
+
+function touchStart(e)
+{
+    e.style.color = '#eee';
+    e.style.backgroundColor = '#555';
+}
+
+function touchEnd(e)
+{
+    // match with index.css 
+    e.style.color = '#000';
+    e.style.backgroundColor = '#fff';
 }
 
 function fade(element) {
@@ -659,9 +679,12 @@ function sendLockCancel()
 
 function connectScan()
 {
-    verification_in_progress = false;
-    displayDialog(dialog.connectCheck);
-    startScan();
+    console.log('dbg');
+    setTimeout(function(){
+        verification_in_progress = false;
+        displayDialog(dialog.connectCheck);
+        startScan();
+    }, 300); // ms
 }
 
 function startScan()
