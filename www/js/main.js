@@ -123,6 +123,7 @@ var ui = {
     optionsIcon: null,
     optionScanButton: null, 
     optionDisconnectButton: null,
+    optionPairAgainButton: null,
     splashScreen: null,
     optionsSlider: null,
 };
@@ -160,8 +161,10 @@ var localData = {
 var localDataFile = null;
 var tx_details = "";
 var tx_lock_pin = "";
-var server_poll_pause = false;
-var verification_in_progress = false;
+
+var server_poll_pause = false,
+    verification_in_progress = false,
+    connect_option_buttons_disabled = false;
 
 
 // ----------------------------------------------------------------------------
@@ -232,6 +235,7 @@ function init()
     ui.parseErrorCancelButton.addEventListener("touchstart", waiting, false);
     ui.txErrorPairButton.addEventListener("touchstart", function(){ displayDialog(dialog.pairDbb) }, false);
     ui.txErrorCancelButton.addEventListener("touchstart", waiting, false);
+    ui.optionPairAgainButton.addEventListener("touchstart", pairAgain, false);
     ui.optionDisconnectButton.addEventListener("touchstart", disconnect, false);
     ui.bitcoinUriClearButton.addEventListener("touchstart", waiting, false);
     ui.connectScanButton.addEventListener("touchstart", connectScan, false);
@@ -281,9 +285,9 @@ function fade(element) {
 function startUp() {
     comserver_url = (localData.server_url == '') ? default_server_url : localData.server_url;
     ui.serverUrlText.value = comserver_url;
-    
     if (localData.server_id === "" || localData.server_id === undefined) {
         console.log('State - no server id.');
+        disableConnectOptionsButtons(true);
         displayDialog(dialog.connectPc);
     }
     
@@ -298,6 +302,7 @@ function startUp() {
     checkUpdatePost(false);
     serverPoll();
 }
+
 
 // ----------------------------------------------------------------------------
 // Network status (debugging)
@@ -398,7 +403,6 @@ function serverSend(msg) {
 }
 
 function checkUpdatePost(display) {
-    console.log('Checking for update.');
     var rn = Math.floor((Math.random() * 100000) + 1);
     var req = new XMLHttpRequest();
     req.onreadystatechange = function() {
@@ -413,7 +417,6 @@ function checkUpdatePost(display) {
                     displayDialog(dialog.checkUpdate);
                 }
             } else {
-                console.log('Could not connect to update server', comserver_url);
                 displayDialog(dialog.serverError);
             }
         }
@@ -459,9 +462,20 @@ function randomNumberClear()
     waiting();
 }
 
+function disableConnectOptionsButtons(disable)
+{
+    connect_option_buttons_disabled = disable;
+    ui.optionDisconnectButton.style.color = disable ? '#888' : '#000';
+    ui.optionPairAgainButton.style.color = disable ? '#888' : '#000';
+}
+
 function disconnect() {
+    if (connect_option_buttons_disabled)
+        return;
+    
     serverSendEncrypt('{"action":"disconnect"}');
     hideOptionButtons();
+    disableConnectOptionsButtons(true);
     setTimeout(function() { 
         displayDialog(dialog.connectPc);
         localData.server_id = "";
@@ -567,10 +581,20 @@ function blinkDel() {
 }
 
 function pairBegin() {
+    localData.verification_key = '';
+    writeLocalData();
     pair.blinkcode = [];
     blinkCodeStrength();
     displayDialog(dialog.pairBlink);
     serverSendEncrypt('{"ecdh":"' + ecdhPubkey() + '"}');
+}
+
+function pairAgain() {
+    if (connect_option_buttons_disabled)
+        return;
+    
+    hideOptionButtons();
+    displayDialog(dialog.pairDbb);
 }
 
 /*
@@ -679,7 +703,6 @@ function sendLockCancel()
 
 function connectScan()
 {
-    console.log('dbg');
     setTimeout(function(){
         verification_in_progress = false;
         displayDialog(dialog.connectCheck);
@@ -1209,7 +1232,6 @@ function parseData(data)
                 var hash = Crypto.createHmac('sha256', data.key)
                    .update(data.key)
                    .digest('hex');
-            console.log('dbg', hash); 
             */
 
             localData.server_id = data.id;
@@ -1221,6 +1243,7 @@ function parseData(data)
             else
                 displayDialog(dialog.pairExists);
 
+            disableConnectOptionsButtons(false);
             console.log('Setting ID:', data.id, ' - Key:', data.key);
             serverSendEncrypt('{"id":"success"}');
             return;
