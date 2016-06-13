@@ -123,6 +123,7 @@ var ui = {
     optionsIcon: null,
     optionScanButton: null, 
     optionDisconnectButton: null,
+    optionPairAgainButton: null,
     splashScreen: null,
     optionsSlider: null,
 };
@@ -160,8 +161,10 @@ var localData = {
 var localDataFile = null;
 var tx_details = "";
 var tx_lock_pin = "";
-var server_poll_pause = false;
-var verification_in_progress = false;
+
+var server_poll_pause = false,
+    verification_in_progress = false,
+    connect_option_buttons_disabled = false;
 
 
 // ----------------------------------------------------------------------------
@@ -173,7 +176,7 @@ document.addEventListener("deviceready", init, false);
 function init()
 {
     /*
-    // Automatically create user interface object from DOM id's in camelCase format
+    // Automatically create ui object from IDs in camelCase format
     var ids = document.querySelectorAll('[id]');
     Array.prototype.forEach.call( ids, function( element, i ) {
         var id = element.id;
@@ -196,44 +199,52 @@ function init()
       if (u.includes('Dialog'))
           dialog[u.replace('Dialog', '')] = element;
     }
-    
-    ui.header.addEventListener("touchstart", hideOptionButtons, false);
-    ui.optionsIcon.addEventListener("touchstart", toggleOptions, false);
-    ui.optionCheckUpdateButton.addEventListener("touchstart", function(){ checkUpdatePost(true) }, false);
-    ui.optionServerUrlChangeButton.addEventListener("touchstart", serverUrl, false);
-    ui.serverUrlSubmitButton.addEventListener("touchstart", serverUrlSubmit, false);
-    ui.serverUrlRestoreDefaultButton.addEventListener("touchstart", serverUrlRestoreDefault, false);
-    ui.serverErrorSettingsButton.addEventListener("touchstart", serverUrl, false);
-    ui.serverErrorCancelButton.addEventListener("touchstart", serverUrlCancel, false);
-    ui.checkUpdateUrlFollowButton.addEventListener("touchstart", followUrl, false);
-    ui.checkUpdateCloseButton.addEventListener("touchstart", waiting, false);
-    ui.randomNumberButton.addEventListener("touchstart", randomNumberClear, false);
-    ui.receiveScanButton.addEventListener("touchstart", startScan, false);
-    ui.receiveClearButton.addEventListener("touchstart", waiting, false);
-    ui.sendCancelButton.addEventListener("touchstart", waiting, false);
-    ui.sendDetailsButton.addEventListener("touchstart", sendDetails, false);
-    ui.lockSendAcceptButton.addEventListener("touchstart", sendLockPin, false);
-    ui.lockSendCancelButton.addEventListener("touchstart", sendLockCancel, false);
-    ui.lockSendDetailsButton.addEventListener("touchstart", sendDetails, false);
-    //ui.pairManualButton.addEventListener("touchstart", pairManual, false);
-    ui.pairBeginButton.addEventListener("touchstart", pairBegin, false);
-    ui.pairRetryButton.addEventListener("touchstart", function(){ displayDialog(dialog.pairDbb) }, false);
-    ui.pairSuccessButton.addEventListener("touchstart", waiting, false);
-    ui.pairExistsPairButton.addEventListener("touchstart", function(){ displayDialog(dialog.pairDbb) }, false);
-    ui.pairExistsContinueButton.addEventListener("touchstart", waiting, false);
-    ui.parseErrorPairButton.addEventListener("touchstart", function(){ displayDialog(dialog.pairDbb) }, false);
-    ui.parseErrorCancelButton.addEventListener("touchstart", waiting, false);
-    ui.txErrorPairButton.addEventListener("touchstart", function(){ displayDialog(dialog.pairDbb) }, false);
-    ui.txErrorCancelButton.addEventListener("touchstart", waiting, false);
-    ui.optionDisconnectButton.addEventListener("touchstart", disconnect, false);
-    ui.bitcoinUriClearButton.addEventListener("touchstart", waiting, false);
-    ui.connectScanButton.addEventListener("touchstart", connectScan, false);
-    ui.optionScanButton.addEventListener("touchstart", startScan, false);
-    ui.blinkDelButton.addEventListener("touchstart", blinkDel, false);
-    ui.blink1Button.addEventListener("touchstart", blinkPress1, false);
-    ui.blink2Button.addEventListener("touchstart", blinkPress2, false);
-    ui.blink3Button.addEventListener("touchstart", blinkPress3, false);
-    ui.blink4Button.addEventListener("touchstart", blinkPress4, false);
+
+    // Add visual feedback for touches
+    var elements = document.getElementsByClassName('buttonSimple');
+    Array.prototype.filter.call(elements, function(e){
+        e.addEventListener("touchstart", function(){ touchStart(e) }, false);
+        e.addEventListener("touchend", function(){ touchEnd(e) }, false);
+    });
+
+    ui.header.addEventListener("touchend", hideOptionButtons, false);
+    ui.optionsIcon.addEventListener("touchend", toggleOptions, false);
+    ui.optionCheckUpdateButton.addEventListener("touchend", function(){ checkUpdatePost(true) }, false);
+    ui.optionServerUrlChangeButton.addEventListener("touchend", serverUrl, false);
+    ui.serverUrlSubmitButton.addEventListener("touchend", serverUrlSubmit, false);
+    ui.serverUrlRestoreDefaultButton.addEventListener("touchend", serverUrlRestoreDefault, false);
+    ui.serverErrorSettingsButton.addEventListener("touchend", serverUrl, false);
+    ui.serverErrorCancelButton.addEventListener("touchend", serverUrlCancel, false);
+    ui.checkUpdateUrlFollowButton.addEventListener("touchend", followUrl, false);
+    ui.checkUpdateCloseButton.addEventListener("touchend", waiting, false);
+    ui.randomNumberButton.addEventListener("touchend", randomNumberClear, false);
+    ui.receiveScanButton.addEventListener("touchend", startScan, false);
+    ui.receiveClearButton.addEventListener("touchend", waiting, false);
+    ui.sendCancelButton.addEventListener("touchend", waiting, false);
+    ui.sendDetailsButton.addEventListener("touchend", sendDetails, false);
+    ui.lockSendAcceptButton.addEventListener("touchend", sendLockPin, false);
+    ui.lockSendCancelButton.addEventListener("touchend", sendLockCancel, false);
+    ui.lockSendDetailsButton.addEventListener("touchend", sendDetails, false);
+    //ui.pairManualButton.addEventListener("touchend", pairManual, false);
+    ui.pairBeginButton.addEventListener("touchend", pairBegin, false);
+    ui.pairRetryButton.addEventListener("touchend", function(){ displayDialog(dialog.pairDbb) }, false);
+    ui.pairSuccessButton.addEventListener("touchend", waiting, false);
+    ui.pairExistsPairButton.addEventListener("touchend", function(){ displayDialog(dialog.pairDbb) }, false);
+    ui.pairExistsContinueButton.addEventListener("touchend", waiting, false);
+    ui.parseErrorPairButton.addEventListener("touchend", function(){ displayDialog(dialog.pairDbb) }, false);
+    ui.parseErrorCancelButton.addEventListener("touchend", waiting, false);
+    ui.txErrorPairButton.addEventListener("touchend", function(){ displayDialog(dialog.pairDbb) }, false);
+    ui.txErrorCancelButton.addEventListener("touchend", waiting, false);
+    ui.optionPairAgainButton.addEventListener("touchend", pairAgain, false);
+    ui.optionDisconnectButton.addEventListener("touchend", disconnect, false);
+    ui.bitcoinUriClearButton.addEventListener("touchend", waiting, false);
+    ui.connectScanButton.addEventListener("touchend", connectScan, false);
+    ui.optionScanButton.addEventListener("touchend", startScan, false);
+    ui.blinkDelButton.addEventListener("touchend", blinkDel, false);
+    ui.blink1Button.addEventListener("touchend", blinkPress1, false);
+    ui.blink2Button.addEventListener("touchend", blinkPress2, false);
+    ui.blink3Button.addEventListener("touchend", blinkPress3, false);
+    ui.blink4Button.addEventListener("touchend", blinkPress4, false);
 
     if (navigator && navigator.splashscreen)
         navigator.splashscreen.hide();
@@ -243,6 +254,19 @@ function init()
     
     ui.connectCheck.innerHTML = connectCheckingText;
     setTimeout(startUp, 2000);
+}
+
+function touchStart(e)
+{
+    e.style.color = '#eee';
+    e.style.backgroundColor = '#555';
+}
+
+function touchEnd(e)
+{
+    // match with index.css 
+    e.style.color = '#000';
+    e.style.backgroundColor = '#fff';
 }
 
 function fade(element) {
@@ -261,9 +285,9 @@ function fade(element) {
 function startUp() {
     comserver_url = (localData.server_url == '') ? default_server_url : localData.server_url;
     ui.serverUrlText.value = comserver_url;
-    
     if (localData.server_id === "" || localData.server_id === undefined) {
         console.log('State - no server id.');
+        disableConnectOptionsButtons(true);
         displayDialog(dialog.connectPc);
     }
     
@@ -278,6 +302,7 @@ function startUp() {
     checkUpdatePost(false);
     serverPoll();
 }
+
 
 // ----------------------------------------------------------------------------
 // Network status (debugging)
@@ -378,7 +403,6 @@ function serverSend(msg) {
 }
 
 function checkUpdatePost(display) {
-    console.log('Checking for update.');
     var rn = Math.floor((Math.random() * 100000) + 1);
     var req = new XMLHttpRequest();
     req.onreadystatechange = function() {
@@ -393,7 +417,6 @@ function checkUpdatePost(display) {
                     displayDialog(dialog.checkUpdate);
                 }
             } else {
-                console.log('Could not connect to update server', comserver_url);
                 displayDialog(dialog.serverError);
             }
         }
@@ -439,9 +462,20 @@ function randomNumberClear()
     waiting();
 }
 
+function disableConnectOptionsButtons(disable)
+{
+    connect_option_buttons_disabled = disable;
+    ui.optionDisconnectButton.style.color = disable ? '#888' : '#000';
+    ui.optionPairAgainButton.style.color = disable ? '#888' : '#000';
+}
+
 function disconnect() {
+    if (connect_option_buttons_disabled)
+        return;
+    
     serverSendEncrypt('{"action":"disconnect"}');
     hideOptionButtons();
+    disableConnectOptionsButtons(true);
     setTimeout(function() { 
         displayDialog(dialog.connectPc);
         localData.server_id = "";
@@ -547,10 +581,20 @@ function blinkDel() {
 }
 
 function pairBegin() {
+    localData.verification_key = '';
+    writeLocalData();
     pair.blinkcode = [];
     blinkCodeStrength();
     displayDialog(dialog.pairBlink);
     serverSendEncrypt('{"ecdh":"' + ecdhPubkey() + '"}');
+}
+
+function pairAgain() {
+    if (connect_option_buttons_disabled)
+        return;
+    
+    hideOptionButtons();
+    displayDialog(dialog.pairDbb);
 }
 
 /*
@@ -659,9 +703,11 @@ function sendLockCancel()
 
 function connectScan()
 {
-    verification_in_progress = false;
-    displayDialog(dialog.connectCheck);
-    startScan();
+    setTimeout(function(){
+        verification_in_progress = false;
+        displayDialog(dialog.connectCheck);
+        startScan();
+    }, 300); // ms
 }
 
 function startScan()
@@ -1186,7 +1232,6 @@ function parseData(data)
                 var hash = Crypto.createHmac('sha256', data.key)
                    .update(data.key)
                    .digest('hex');
-            console.log('dbg', hash); 
             */
 
             localData.server_id = data.id;
@@ -1198,6 +1243,7 @@ function parseData(data)
             else
                 displayDialog(dialog.pairExists);
 
+            disableConnectOptionsButtons(false);
             console.log('Setting ID:', data.id, ' - Key:', data.key);
             serverSendEncrypt('{"id":"success"}');
             return;

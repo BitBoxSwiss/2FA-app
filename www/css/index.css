@@ -67,8 +67,10 @@ body {
     word-wrap:break-word;
     font-family: 'Source Sans Pro', 'HelveticaNeue-Light', 'HelveticaNeue', Helvetica, Arial, sans-serif;
     font-size:14px;
+   -webkit-user-select: none;
+    user-select: none;
 }
-        
+
 pre {
     font-family: 'Source Sans Pro', 'HelveticaNeue-Light', 'HelveticaNeue', Helvetica, Arial, sans-serif;
     text-align: left;
@@ -234,6 +236,8 @@ pre {
     -webkit-border-radius:4px;
     appearance:none;
     -webkit-appearance:none;
+    user-select: text;
+    -webkit-user-select: text;
 }
 
 .light {
