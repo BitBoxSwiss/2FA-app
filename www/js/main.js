@@ -30,8 +30,6 @@ var VERSION = '2.0.0'; // match to version in config.xml
 
 var Crypto = require("crypto");
 var Bitcore = require("bitcore-lib");
-var Ripemd160 = require('ripemd160');
-var Base58Check = require('bs58check');
 var Reverse = require("buffer-reverse");
 
 
@@ -598,6 +596,7 @@ function pairAgain() {
 }
 
 /*
+var Base58Check = require('bs58check');
 function pairManual() {
     displayDialog(null);
     
@@ -720,8 +719,12 @@ function startScan()
         }, 
 		function (error) {
 			console.log("Scanning failed: " + error);
-		}
-	)
+		},
+        {
+          "prompt" : "",
+          "formats" : "QR_CODE"
+        }
+	);
     }
     catch(err) {
         console.log(err.message);
@@ -772,42 +775,6 @@ function ecdhPubkey() {
     return ecdh.getPublicKey('hex','compressed'); // 33 bytes
 }    
 
-function p2pkHash(script) {
-    var hash = Crypto.createHash('sha256')
-               .update(new Buffer(script, 'hex'))
-               .digest();
-    hash = Ripemd160(hash);
-    if (COINNET === 'livenet') {
-        hash = Base58Check.encode(new Buffer('00' + hash.toString('hex'), 'hex'));
-    } else if (COINNET === 'testnet') {
-        hash = Base58Check.encode(new Buffer('6f' + hash.toString('hex'), 'hex'));
-    } else {
-        hash = 0;
-    }
-    return hash;
-}
-
-function multisigHash(script) {
-    var hash = Crypto.createHash('sha256')
-               .update(new Buffer(script, 'hex'))
-               .digest();
-    hash = Ripemd160(hash);
-    if (COINNET === 'livenet') {
-        hash = Base58Check.encode(new Buffer('05' + hash.toString('hex'), 'hex'));
-    } else if (COINNET === 'testnet') {
-        hash = Base58Check.encode(new Buffer('c4' + hash.toString('hex'), 'hex'));
-    } else {
-        hash = 0;
-    }
-    return hash;
-}
-
-function multisig1of1(publickey) {
-    var pushbytes = (publickey.length  / 2).toString(16);
-    var script = OP_1 + pushbytes + publickey + OP_1 + OP_CHECKMULTISIG;
-    return multisigHash(script);
-}
-
 function getInputs(transaction, sign) {
     var blockWorker = new Worker("js/getData.js");
     var addresses = [];
@@ -818,103 +785,110 @@ function getInputs(transaction, sign) {
         return self.indexOf(value) === index;
     }
 
-    for (var i = 0; i < transaction.inputs.length; i++) {
-        var tr = transaction.toJSON().inputs[i]; 
-        var a = new Bitcore.Script(tr.script)
-                           .toAddress(COINNET)
-                           .toString();
-        addresses.push(a);
-       
-        var t = {};
-        t.address = a;
-        t.id = tr.prevTxId;
-        tx.push(t);
-    }
-    
-    var unique_addresses = addresses.filter( onlyUnique );
-    var addrs = unique_addresses[0];
-    for (var i = 1; i < unique_addresses.length; i++) {
-        addrs += ',' + unique_addresses[i];
-    }
-    
-    var reply = false,
-        blockexplorer_fail_limit = 2,
-        blockexplorer_count = 0;
-    blockWorker.postMessage("https://blockexplorer.com/api/addrs/" + addrs + "/utxo");
-    blockWorker.postMessage("https://insight.bitpay.com/api/addrs/" + addrs + "/utxo");
-    blockWorker.postMessage("https://btc.blockr.io/api/v1/address/unspent/" + addrs);
-    blockWorker.onmessage = function(e) {
-        if (e.data === null) {
-            blockexplorer_count++;
-            if (blockexplorer_count >= blockexplorer_fail_limit) {
-                console.log('Error: could not get address balances.');
-                blockWorker.terminate();
-                process_verify_transaction(transaction, sign);
-            }
-            return;
+    try {
+        for (var i = 0; i < transaction.inputs.length; i++) {
+            var tr = transaction.toJSON().inputs[i]; 
+            var a = new Bitcore.Script(tr.script)
+                               .toAddress(COINNET)
+                               .toString();
+            addresses.push(a);
+           
+            var t = {};
+            t.address = a;
+            t.id = tr.prevTxId;
+            tx.push(t);
         }
         
-        if (reply)
-            return;
-        reply = true;
+        var unique_addresses = addresses.filter( onlyUnique );
+        var addrs = unique_addresses[0];
+        for (var i = 1; i < unique_addresses.length; i++) {
+            addrs += ',' + unique_addresses[i];
+        }
         
-        var ret = JSON.parse(e.data[0]);
-
-        // Reformat JSON from blockr.io 
-        if (typeof ret.data === 'object') {
-            var tmp = ret.data;
-            ret = [];
-            
-            if (tmp.length === undefined || tmp.length == 1) {
-                for (var j = 0; j < tmp.unspent.length; j++) {
-                    var t = {};
-                    t.address = tmp.address;
-                    t.txid = tmp.unspent[j].tx;
-                    t.amount = tmp.unspent[j].amount;
-                    ret.push(t);
+        var reply = false,
+            blockexplorer_fail_limit = 2,
+            blockexplorer_count = 0;
+        blockWorker.postMessage("https://blockexplorer.com/api/addrs/" + addrs + "/utxo");
+        blockWorker.postMessage("https://insight.bitpay.com/api/addrs/" + addrs + "/utxo");
+        blockWorker.postMessage("https://btc.blockr.io/api/v1/address/unspent/" + addrs);
+        blockWorker.onmessage = function(e) {
+            if (e.data === null) {
+                blockexplorer_count++;
+                if (blockexplorer_count >= blockexplorer_fail_limit) {
+                    console.log('Error: could not get address balances.');
+                    blockWorker.terminate();
+                    process_verify_transaction(transaction, sign);
                 }
-            } else { 
-                for (var i = 0; i < tmp.length; i++) {
-                    for (var j = 0; j < tmp[i].unspent.length; j++) {
+                return;
+            }
+            
+            if (reply)
+                return;
+            reply = true;
+            
+            var ret = JSON.parse(e.data[0]);
+
+            // Reformat JSON from blockr.io 
+            if (typeof ret.data === 'object') {
+                var tmp = ret.data;
+                ret = [];
+                
+                if (tmp.length === undefined || tmp.length == 1) {
+                    for (var j = 0; j < tmp.unspent.length; j++) {
                         var t = {};
-                        t.address = tmp[i].address;
-                        t.txid = tmp[i].unspent[j].tx;
-                        t.amount = tmp[i].unspent[j].amount;
+                        t.address = tmp.address;
+                        t.txid = tmp.unspent[j].tx;
+                        t.amount = tmp.unspent[j].amount;
                         ret.push(t);
                     }
-                }
-            }
-        }
-
-        for (var i = 0; i < ret.length; i++) {
-            for (var j = 0; j < tx.length; j++) {
-                if (ret[i].txid === tx[j].id && ret[i].address === tx[j].address) {
-                    var input = {};
-                    input.balance = Number(ret[i].amount) * SAT2BTC;
-                    input.address = ret[i].address;
-                    input.txid = ret[i].txid;
-                    
-                    var present = false;
-                    for (var k = 0; k < pair.inputAddresses.length; k++) {
-                        if (input.address === pair.inputAddresses[k].address) {
-                            pair.inputAddresses[k].balance += Number(input.balance);
-                            present = true;
-                            break;
+                } else { 
+                    for (var i = 0; i < tmp.length; i++) {
+                        for (var j = 0; j < tmp[i].unspent.length; j++) {
+                            var t = {};
+                            t.address = tmp[i].address;
+                            t.txid = tmp[i].unspent[j].tx;
+                            t.amount = tmp[i].unspent[j].amount;
+                            ret.push(t);
                         }
                     }
-                    if (present === false) {
-                        pair.inputAddresses.push(input);
-                    }
-
-                    break;
                 }
             }
-        }
-           
+
+            for (var i = 0; i < ret.length; i++) {
+                for (var j = 0; j < tx.length; j++) {
+                    if (ret[i].txid === tx[j].id && ret[i].address === tx[j].address) {
+                        var input = {};
+                        input.balance = Number(ret[i].amount) * SAT2BTC;
+                        input.address = ret[i].address;
+                        input.txid = ret[i].txid;
+                        
+                        var present = false;
+                        for (var k = 0; k < pair.inputAddresses.length; k++) {
+                            if (input.address === pair.inputAddresses[k].address) {
+                                pair.inputAddresses[k].balance += Number(input.balance);
+                                present = true;
+                                break;
+                            }
+                        }
+                        if (present === false) {
+                            pair.inputAddresses.push(input);
+                        }
+
+                        break;
+                    }
+                }
+            }
+               
+            blockWorker.terminate();
+            console.log('Got address balances.', pair.inputAddresses.length);
+            process_verify_transaction(transaction, sign);
+        };
+    }
+    catch(err) {
         blockWorker.terminate();
-        console.log('Got address balances.', pair.inputAddresses.length);
+        console.log('Could not get inputs. Unknown error.');
         process_verify_transaction(transaction, sign);
-    };
+    }
 }
 
 
@@ -935,6 +909,11 @@ function process_verify_transaction(transaction, sign)
 
     // Get outputs and amounts
     tx_details += "\nOutputs:\n";
+        
+    var keyring = [];
+    for (var j = 0; j < sign.checkpub.length; j++)
+        keyring.push(sign.checkpub[j].pubkey);
+    
     for (var i = 0; i < transaction.outputs.length; i++) {
         var address, amount, present;
         address = transaction.outputs[i].script
@@ -948,13 +927,19 @@ function process_verify_transaction(transaction, sign)
         for (var j = 0; j < sign.checkpub.length; j++) {
             var checkaddress;
             var pubk = sign.checkpub[j].pubkey; 
-            if (1) { // p2pkh
-                checkaddress = p2pkHash(pubk);
-            } else { // multisig
-                checkaddress = multisigHash(pubk);
-            }
-            if (checkaddress === address) {
+            
+            // p2pkh
+            checkaddress = new Bitcore.Address.fromPublicKey(new Bitcore.PublicKey(pubk, COINNET)).toString();
+            
+            if (checkaddress === address)
                 present = sign.checkpub[j].present; 
+            
+            // multisig, any m of n
+            for (var m = 0; m < keyring.length + 1; m++) {
+                checkaddress = new Bitcore.Address(keyring, m).toString();
+            
+                if (checkaddress === address)
+                    present = sign.checkpub[j].present;
             }
         }
 
@@ -1023,13 +1008,29 @@ function process_verify_transaction(transaction, sign)
     for (var j = 0; j < sign.data.length; j++) {
         var present = false;
         for (var i = 0; i < transaction.inputs.length; i++) {
-            var nhashtype = Bitcore.crypto.Signature.SIGHASH_ALL;
-            var script = transaction.inputs[i].script;
-            //script = script.chunks[script.chunks.length - 1].buf; // redeem script is 2nd to last chunk -- hack needed for 1of1 multisig?
+            var nhashtype,
+                script,
+                sighash;
             
-            var sighash = Bitcore.Transaction.sighash
-                .sighash(transaction, nhashtype, i, script);
-           
+            nhashtype = Bitcore.crypto.Signature.SIGHASH_ALL;
+            script = transaction.inputs[i].script;
+            
+            // p2pkh
+            sighash = Bitcore.Transaction
+                      .sighash
+                      .sighash(transaction, nhashtype, i, script);
+            
+            if (sign.data[j].hash === Reverse(sighash).toString('hex'))
+                present = true; 
+            
+            // multisig
+            // FIXME Hack to extract the redeem script, which is the 2nd to last chunk.
+            //       Could not find a clean way to get the script using Bitcore functions.
+            script = script.chunks[script.chunks.length - 1].buf; 
+            sighash = Bitcore.Transaction
+                      .sighash
+                      .sighash(transaction, nhashtype, i, script);
+            
             if (sign.data[j].hash === Reverse(sighash).toString('hex'))
                 present = true; 
         }
@@ -1088,12 +1089,14 @@ function process_dbb_pairing(parse)
 
 function process_verify_address(plaintext, type) 
 {    
-    var parse = Base58Check.decode(plaintext).slice(-33).toString('hex');
+    var parse = '';
 
     if (type === 'p2pkh')
-        parse = p2pkHash(parse);
-    else 
-        parse = multisig1of1(parse);
+        parse  = new Bitcore.Address.fromPublicKey(new Bitcore.HDPublicKey(plaintext, COINNET).publicKey).toString();
+    else { // multisig
+        // FIXME - use Bitcore.Address https://bitcore.io/api/lib/address
+        //parse = ... ;
+    }
     
     if (parse) 
         parse = "<pre>" + parse + "</pre>";
