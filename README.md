@@ -27,7 +27,6 @@ cordova create digitalbitbox2FA com.digitalbitbox.tfa "DigitalBitbox2FA" --copy-
 cd digitalbitbox2FA
 cordova platform add android 
 cordova plugin add phonegap-plugin-barcodescanner
-cordova plugin add cordova-plugin-crosswalk-webview 
 cordova plugin add cordova-plugin-whitelist
 cordova plugin add cordova-plugin-inappbrowser
 cordova plugin add cordova-plugin-statusbar
