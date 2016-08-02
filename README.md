@@ -30,6 +30,7 @@ cordova plugin add phonegap-plugin-barcodescanner
 cordova plugin add cordova-plugin-whitelist
 cordova plugin add cordova-plugin-inappbrowser
 cordova plugin add cordova-plugin-statusbar
+cordova plugin add cordova-plugin-device
 npm install bitcore-lib buffer-reverse
 browserify www/js/main.js -o www/js/app.js
 cordova build android

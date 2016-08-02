@@ -244,6 +244,14 @@ function init()
     ui.blink3Button.addEventListener("touchend", blinkPress3, false);
     ui.blink4Button.addEventListener("touchend", blinkPress4, false);
 
+
+    if (device.platform == 'iOS') {
+        // Apple requirement
+        console.log('Disabling check update button for iOS device.');
+        ui.optionCheckUpdateButton.style.display = "none";
+    }
+
+
     if (navigator && navigator.splashscreen)
         navigator.splashscreen.hide();
     fade(ui.splashScreen); 
