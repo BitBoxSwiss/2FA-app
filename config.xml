@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget android-versionCode="6" id="com.digitalbitbox.tfa" ios-CFBundleVersion="2.0.0" version="2.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0"><!-- MATCH VERSIONS in main.js -->
+<widget android-versionCode="7" id="com.digitalbitbox.tfa" ios-CFBundleVersion="2.0.1" version="2.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0"><!-- MATCH VERSIONS in main.js -->
     <name>DigitalBitbox2FA</name>
     <description>Verify Digital Bitbox actions.</description>
     <author email="info@digitalbitbox.com" href="http://digitalbitbox.com">Digital Bitbox</author>
@@ -65,4 +65,8 @@
         <icon height="1024" src="img/ios/icon/icon-AppStore@2x.png" width="1024" />
         <icon height="1800" src="img/ios/icon/icon-AppStore@2x.png" width="1800" />
     </platform>
+    <preference name="xwalkVersion" value="19+" />
+    <preference name="xwalkCommandLine" value="--disable-pull-to-refresh-effect" />
+    <preference name="xwalkMode" value="embedded" />
+    <preference name="xwalkMultipleApk" value="true" />
 </widget>
