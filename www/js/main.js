@@ -911,7 +911,8 @@ function process_verify_transaction(transaction, sign)
         external_address = '',
         external_amount = 0,
         err = '',
-        res = '';
+        res = '',
+        a_elements = [];
 
     tx_details = '';
 
@@ -956,7 +957,8 @@ function process_verify_transaction(transaction, sign)
             tx_details += '<span style="color: ' + DBB_COLOR_WARN + ';">' + res + '</span>';
             external_address = address;
             external_amount += amount / SAT2BTC;
-            if ((external_amount + "").split(".")[1].length > 8)
+            a_elements = (external_amount + "").split(".");
+            if (a_elements.length > 1 && a_elements[1].length > 8)
                 external_amount = external_amount.toFixed(8);
         } else {
             res = address + "  " + amount / SAT2BTC + " BTC (change address)\n";
