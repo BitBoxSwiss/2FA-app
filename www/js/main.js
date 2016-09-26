@@ -26,7 +26,7 @@
 
 'use strict';
 
-var VERSION = '2.0.0'; // match to version in config.xml
+var VERSION = '2.0.2'; // match to version in config.xml
 
 var Crypto = require("crypto");
 var Bitcore = require("bitcore-lib");
