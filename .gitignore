@@ -4,6 +4,7 @@ plugins
 node_modules
 extra
 www/js/app.js
+www/js/app_*.js
 test.js
 *.swp
 *.swo

@@ -22,26 +22,30 @@ Requires:
 Command line build and install:
 
 ```
-git clone https://github.com/digitalbitbox/2FA-app.git 
-cordova create digitalbitbox2FA com.digitalbitbox.tfa "DigitalBitbox2FA" --copy-from=./2FA-app/
-cd digitalbitbox2FA
-cordova platform add android 
-cordova plugin add phonegap-plugin-barcodescanner
-cordova plugin add cordova-plugin-crosswalk-webview
-cordova plugin add cordova-plugin-network-information
-cordova plugin add cordova-plugin-whitelist
-cordova plugin add cordova-plugin-inappbrowser
-cordova plugin add cordova-plugin-statusbar
-cordova plugin add cordova-plugin-device
-npm install bitcore-lib buffer-reverse
-browserify www/js/main.js -o www/js/app.js
+git clone https://github.com/digitalbitbox/2FA-app.git
+cd 2FA-app
+cordova prepare
+npm install
+
+Insert after “buildscript” in “platforms/android/app/build.gradle”:
+configurations.all {
+   resolutionStrategy {
+       force 'com.android.support:support-v4:27.1.0'
+   }
+}
+
+# After code edits:
+browserify www/js/main_new.js -o www/js/app_new.js && browserify www/js/init.js -o www/js/app_init.js && browserify www/js/main_old.js -o www/js/app_old.js
 cordova build android
 ```
 
-To install on an Android phone, connect it to your computer and type  `cordova run android`. [Developer permissions](https://developer.android.com/tools/device.html) are required. 
+To install on an Android phone, connect it to your computer and type  `cordova run android`. [Developer permissions](https://developer.android.com/tools/device.html) are required.
 
 To install on an iPhone, replace `android` with `ios` and open the file `platforms/ios/Digital Bitbox QR.xcodeproj` in Xcode. An iOS Developer Program membership, or a jailbroke phone, is required.
 
+## Development
 
+It's easier to develop in the browser. Setup with `cordova platform add browser`. Start server with `cordova run browser`. Your default browser starts, but to allow cross origin requests,
+run chrome like `chromium-browser --disable-web-security --user-data-dir`.
 
-
+After code edits: `browserify www/js/main_new.js -o www/js/app_new.js && browserify www/js/init.js -o www/js/app_init.js && browserify www/js/main_old.js -o www/js/app_old.js && cordova prepare browser` (and then just refresh the page).

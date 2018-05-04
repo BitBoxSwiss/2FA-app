@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+
+<!-- /*
+
+ The MIT License (MIT)
+
+ Copyright (c) 2015 Douglas J. Bakkum, Shift Devices AG
+
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ and/or sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice shall be included
+ in all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
+ OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ OTHER DEALINGS IN THE SOFTWARE.
+
+*/ -->
+
+
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self' gap: https: ws: 'unsafe-inline'; script-src 'self' 'unsafe-eval'; object-src 'self'">
+
+        <link rel="stylesheet" type="text/css" href="css/index.css" />
+        <link rel="stylesheet" type="text/css" href="css/digiboxfont.css" />
+        <link rel="stylesheet" type="text/css" href="font/font-awesome/css/font-awesome.min.css" />
+        <title>Digital Bitbox 2FA</title>
+
+        <script type="text/javascript" src="cordova.js" async></script>
+        <script type="text/javascript" src="js/app_new.js" async></script>
+    </head>
+
+    <body>
+
+        <div id="splash-screen"></div>
+
+        <div id="spinner-dialog" class="spinner hidden"><i class="fa fa-minus fa-spin fa-4x"></i></div>
+
+        <div class="header" id="header"><db>#</db><dbs>digital&nbsp;bitbox</dbs></div>
+
+        <div class="options">
+            <button id="options-icon" class="optionsIcon"><i class="fa fa-bars fa-2x"></i></button>
+            <div id="options-slider" class="optionsSlider" style="top:-100%">
+                <br><br><br><br>
+                <button id="option-disconnect-button" class="buttonOption">Disconnect and unpair</button><br><br><br>
+                <button id="option-scan-button" class="buttonOption">Manual verification (scan QR codes)</button><br><br><br>
+                <button id="option-legacy-button" class="buttonOption">Use old desktop app</button><br><br><br>
+                <!-- Disabled until available in Desktop app -->
+                <!--<button id="option-server-url-change-button" class="buttonOption">Server settings</button><br><br><br>-->
+                <button id="option-check-update-button" class="buttonOption">Check for update</button><br><br><br>
+            </div>
+        </div>
+
+
+
+        <br><br><br>
+        <br><br><br>
+        <br><br><br>
+
+
+
+        <div id="connect-check-dialog">
+            <i class="fa fa-mobile fa-4x"></i>
+            <br><br>
+            <div id="connect-check" class="infoText light"></div>
+        </div>
+
+
+
+        <div id="connect-pc-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp;
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp;
+            <i class="fa fa-desktop fa-4x"></i>
+            <br><br>
+            <div class="infoText light">
+                First, click on the 'Connect Mobile App' button in the desktop app's Options tab.<br><br>
+                Then scan that QR code here.
+            </div>
+            <button id="connect-scan-button" class="buttonSimple">Scan</button>
+        </div>
+
+
+
+        <div id="server-error-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp;
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp;
+            <i class="fa fa-desktop fa-4x"></i>
+            <br><br>
+            <button id="server-error-settings-button" class="buttonSimple">Settings</button>
+            <button id="server-error-cancel-button" class="buttonSimple">Cancel</button>
+            <div class="infoText light">
+                Server communication error.
+            </div>
+        </div>
+
+
+
+        <div id="check-update-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>
+            <br><br>
+            <div id="check-update-text" class="infoText"></div>
+            <br>
+            <button id="check-update-url-follow-button" class="buttonSimple">Yes</button>
+            <button id="check-update-close-button" class="buttonSimple">Close</button>
+        </div>
+
+
+
+        <div id="server-url-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp;
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp;
+            <i class="fa fa-desktop fa-4x"></i>
+            <br><br>
+            <div class="infoText light">
+                Communication server:
+            </div>
+            <input type="text" id="server-url-text" class="textInput light" value="" />
+            <br>
+            <button id="server-url-submit-button" class="buttonSimple">OK</button>
+            <button id="server-url-restore-default-button" class="buttonSimple">Use default</button>
+        </div>
+
+        <!-- Disconnect warning -->
+        <div id="disconnect-warning-dialog" class="hidden">
+            <div class="infoText light">
+                <h3>Disconnect warning</h3>
+                If your device has 2FA enabled, disconnecting can be dangerous. In this 
+                case, you will not be able to re-pair until you reset the BitBox.<br><br>
+                <div id="disconnect-warning-checkbox-error" class="errorText hidden">Please check the checkbox below!</div>
+                <div>
+                    <input type="checkbox" id="disconnect-warning-checkbox" name="feature" 
+                        value="disconnect-warning-understood" />
+                    <label for="disconnect-warning-checkbox">I understand that, when disconnecting 
+                        from the channel, I can only use a 2FA-enabled BitBox again if I reset the device 
+                        and restore it from a backup.</label>
+                </div>
+            </div>
+            <button id="cancel-disconnect-button" class="buttonSimple">Cancel</button>
+            <button id="disconnect-button" class="buttonSimple">Disconnect</button>
+        </div>
+
+
+
+        <!-- Bitbox pairing -->
+        <div id="pair-dbb-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp;
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp;
+            <img class="fa" style="opacity:0" src="img/dbb.png" width="30" />
+            <span class="fa led">
+                <img src="img/dbb_blink.png" width="30" />
+                <img class="top" src="img/dbb.png" width="30" />
+            </span>
+            <br><br>
+            <div class="infoText light">
+                Pair with your Digital Bitbox. To do so, a long-touch is required on your Bitbox.
+            </div>
+            <button id="pair-begin-button" class="buttonSimple">Begin</button>
+        </div>
+
+        <!-- <div id="pair-confirm-not-blinked-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp;
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp;
+            <img class="fa" style="opacity:0" src="img/dbb.png" width="30" />
+            <span class="fa led">
+                <img src="img/dbb_blink.png" width="30" />
+                <img class="top" src="img/dbb.png" width="30" />
+            </span>
+            <br><br>
+            <div class="infoText light">
+              The pairing was initiated. Did your bitbox blink quickly?
+            </div>
+            <button id="pair-abort1-button" class="buttonSimple">Yes it did</button>
+            <button id="pair-abort2-button" class="buttonSimple">I don't know</button>
+            <button id="pair-continue-button" class="buttonSimple">No it didn't</button>
+        </div> -->
+
+        <div id="pair-challenge-dialog" class="hidden" style="margin-top:-40px; margin-bottom:-40px">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp;
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp;
+            <img class="fa" src="img/dbb_blink.png" width="30" />
+            <div class="infoText light">
+                Excellent! Now let's confirm that the pairing was correct. Enter the number of short LED blinks.<br>
+                If the Bitbox behaves suspiciously (blinking not triggered by you), abort the process immediately.
+            </div>
+            <div class="center disabled" id="blink-buttons">
+                <button id="blink1-button" class="buttonCircle">1</button>
+                <button id="blink2-button" class="buttonCircle">2</button>
+                <button id="blink3-button" class="buttonCircle">3</button>
+                <button id="blink4-button" class="buttonCircle">4</button>
+            </div>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <br>
+            <button id="pair-challenge-next-button" class="buttonSimple">Blink</button>
+            <button id="pair-challenge-finish-button" class="buttonSimple" style="color: #888; background-color: #ccc" disabled>Finish</button>
+            <button id="pair-challenge-cancel-button" class="buttonSimple">Abort</button>
+            <br>
+            <progress id="pair-challenge-progress" value="0" max="13" class="hidden" 
+                style="margin-top: 25px;"></progress>
+            <div id="pair-challenge-continue-note" class="hidden" style="font-style: italic; color:olivedrab; margin-top: 25px;">Mimimum security confirmed. You may continue or finish.</div>
+        </div>
+
+        <div id="pair-success-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp;
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp;
+            <img class="fa" src="img/dbb_blink.png" width="30" />
+            <br><br>
+            <button id="pair-success-button" class="buttonSimple">Continue</button>
+            <div class="infoText light">
+                Successfully paired!
+            </div>
+        </div>
+
+        <div id="pair-suspicious-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp;
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp;
+            <img class="fa" src="img/dbb.png" width="30" />
+            <br><br>
+            <button id="pair-suspicious-disconnect-button" class="buttonSimple">Retry</button>
+            <div class="infoText light">
+                Pairing aborted.<br><br>
+                You are seeing this dialog because the Bitbox did not behave as
+                expected. It is possible that a malicious software is trying to interfere with the
+                pairing. Make sure you have the original Bitbox desktop software installed. If
+                you're uncertain, contact our support.
+            </div>
+        </div>
+
+        <div id="pair-user-cancelled-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp; 
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp; 
+            <img class="fa" src="img/dbb.png" width="30" />
+            <br><br>
+            <button id="pair-user-cancelled-disconnect-button" class="buttonSimple">Retry</button>
+            <div class="infoText light">
+                Pairing cancelled.<br><br> 
+                You cancelled the pairing. Click on retry to start over.
+            </div>
+        </div>
+
+        <div id="pair-fail-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp;
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp;
+            <img class="fa" src="img/dbb.png" width="30" />
+            <br><br>
+            <button id="pair-fail-disconnect-button" class="buttonSimple">Retry</button>
+            <div class="infoText light">
+                Unsuccessful pairing.<br><br>
+                Either you entered the wrong number, or a malicious
+                software is interferring with the communication between the Bitbox and the
+                mobile app.
+            </div>
+        </div>
+
+        <div id="qr-sequence-dialog" class="hidden">
+            <div id="qr-sequence-text" class="infoText"></div>
+        </div>
+
+
+        <!-- unused - - >
+        <button id="pair-manual-button" class="buttonRound hidden">Pair manually</button-->
+
+
+        <div id="pair-exists-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp;
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp;
+            <img class="fa" src="img/dbb_blink.png" width="30" />
+            <br><br>
+            <button id="pair-exists-disconnect-button" class="buttonSimple">Pair again</button>
+            <button id="pair-exists-continue-button" class="buttonSimple">Continue</button>
+            <div class="infoText light">
+                The mobile app has already been paired with a Digital Bitbox.
+            </div>
+        </div>
+
+
+        <div id="parse-error-dialog" class="hidden">
+            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp;
+            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp;
+            <img class="fa" style="opacity:0" src="img/dbb.png" width="30" />
+            <span class="fa led">
+                <img src="img/dbb_blink.png" width="30" />
+                <img class="top" src="img/dbb.png" width="30" />
+            </span>
+            <br><br>
+            <button id="parse-error-disconnect-button" class="buttonSimple">Pair again</button>
+            <button id="parse-error-cancel-button" class="buttonSimple">Cancel</button>
+            <div class="infoText">
+                Unrecognized data to verify. Is the Digital Bitbox correctly paired?
+            </div>
+        </div>
+
+
+
+        <div id="waiting-dialog" class="hidden">
+            <div class="">
+                <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp;&nbsp;&nbsp;
+                <i class="fa fa-desktop fa-4x"></i>&nbsp;&nbsp;&nbsp;&nbsp;
+                <img class="fa dbbWaiting" src="img/dbb.png" width="30" />
+            </div>
+            <div class="infoText">
+                <br><big>Ready...</big><br><br><br><br>
+                <span class="light">Data to verify is displayed automatically.</span>
+            </div>
+        </div>
+
+
+
+        <div id="random-number-dialog" class="hidden">
+            <div class="infoText"><big>Random hexadecimal number</big></div>
+            <div id="random-number"></div>
+            <br>
+            <button id="random-number-button" class="buttonSimple">Clear</button>
+        </div>
+
+
+
+        <div id="receive-dialog" class="hidden">
+            <div class="infoText"><big>Receiving address</big></div>
+            <i class="fa fa-long-arrow-up fa-lg"></i>
+            <div id="receive-address"></div>
+            <br>
+            <button id="receive-scan-button" class="buttonSimple">Scan</button>
+            <button id="receive-clear-button" class="buttonSimple"><b>Clear</b></button>
+        </div>
+
+
+
+        <div id="send-dialog" class="hidden">
+            <div "infoText">
+                <big>
+                Sending&nbsp;
+                <b><span id="send-amount"></span></b>
+                </big>
+            </div>
+            <br><i class="fa fa-long-arrow-down fa-lg"></i><br><br>
+            <div id="send-address"></div>
+            <div id="send-error" class="infoText"></div>
+            <br>
+            <span id="send-unlocked-mode">
+                <button id="send-details-button" class="buttonSimple">Details</button>
+                <button id="send-cancel-button" class="buttonSimple">Clear</button>
+            </span>
+            <span id="send-locked-mode" class="hidden">
+                <button id="lock-send-accept-button" class="buttonSimple"><b>Accept</b></button>
+                <button id="lock-send-details-button" class="buttonSimple">Details</button>
+                <button id="lock-send-cancel-button" class="buttonSimple">Cancel</button>
+            </span>
+            <div id="send-details" class="sendDetails hidden"></div>
+        </div>
+
+
+
+        <div id="bitcoin-uri-dialog" class="hidden">
+            <div "infoText">
+                <i class="fa fa-qrcode fa-4x"></i><br><br>
+                <span id="bitcoin-uri-amount"></span>
+            </div>
+            <div id="bitcoin-uri-address"></div>
+            <br>
+            <button id="bitcoin-uri-clear-button" class="buttonSimple">Clear</button>
+        </div>
+
+
+
+        <div id="tx-error-dialog" class="hidden">
+            <div class="infoText">
+                <br><big>Corrupted transaction verification data.</big><br><br><br><br>
+            </div>
+            <button id="tx-error-disconnect-button" class="buttonSimple">Pair again</button>
+            <button id="tx-error-cancel-button" class="buttonSimple">Cancel</button>
+        </div>
+
+
+
+    </body>
+</html>

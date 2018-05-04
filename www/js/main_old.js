@@ -32,6 +32,8 @@ var Crypto = require("crypto");
 var Bitcore = require("bitcore-lib");
 var Reverse = require("buffer-reverse");
 
+var Display = require("./display.js");
+
 
 var PORT = 25698;
 var WARNFEE = 500000; // satoshis TODO update
@@ -120,6 +122,7 @@ var ui = {
     bitcoinUriClearButton: null,
     optionsIcon: null,
     optionScanButton: null, 
+    optionScan2Button: null, 
     optionDisconnectButton: null,
     optionPairAgainButton: null,
     splashScreen: null,
@@ -205,44 +208,45 @@ function init()
         e.addEventListener("touchend", function(){ touchEnd(e) }, false);
     });
 
-    ui.header.addEventListener("touchend", hideOptionButtons, false);
-    ui.optionsIcon.addEventListener("touchend", toggleOptions, false);
-    ui.optionCheckUpdateButton.addEventListener("touchend", function(){ checkUpdatePost(true) }, false);
-    ui.optionServerUrlChangeButton.addEventListener("touchend", serverUrl, false);
-    ui.serverUrlSubmitButton.addEventListener("touchend", serverUrlSubmit, false);
-    ui.serverUrlRestoreDefaultButton.addEventListener("touchend", serverUrlRestoreDefault, false);
-    ui.serverErrorSettingsButton.addEventListener("touchend", serverUrl, false);
-    ui.serverErrorCancelButton.addEventListener("touchend", serverUrlCancel, false);
-    ui.checkUpdateUrlFollowButton.addEventListener("touchend", followUrl, false);
-    ui.checkUpdateCloseButton.addEventListener("touchend", waiting, false);
-    ui.randomNumberButton.addEventListener("touchend", randomNumberClear, false);
-    ui.receiveScanButton.addEventListener("touchend", startScan, false);
-    ui.receiveClearButton.addEventListener("touchend", waiting, false);
-    ui.sendCancelButton.addEventListener("touchend", waiting, false);
-    ui.sendDetailsButton.addEventListener("touchend", sendDetails, false);
-    ui.lockSendAcceptButton.addEventListener("touchend", sendLockPin, false);
-    ui.lockSendCancelButton.addEventListener("touchend", sendLockCancel, false);
-    ui.lockSendDetailsButton.addEventListener("touchend", sendDetails, false);
-    //ui.pairManualButton.addEventListener("touchend", pairManual, false);
-    ui.pairBeginButton.addEventListener("touchend", pairBegin, false);
-    ui.pairRetryButton.addEventListener("touchend", function(){ displayDialog(dialog.pairDbb) }, false);
-    ui.pairSuccessButton.addEventListener("touchend", waiting, false);
-    ui.pairExistsPairButton.addEventListener("touchend", function(){ displayDialog(dialog.pairDbb) }, false);
-    ui.pairExistsContinueButton.addEventListener("touchend", waiting, false);
-    ui.parseErrorPairButton.addEventListener("touchend", function(){ displayDialog(dialog.pairDbb) }, false);
-    ui.parseErrorCancelButton.addEventListener("touchend", waiting, false);
-    ui.txErrorPairButton.addEventListener("touchend", function(){ displayDialog(dialog.pairDbb) }, false);
-    ui.txErrorCancelButton.addEventListener("touchend", waiting, false);
-    ui.optionPairAgainButton.addEventListener("touchend", pairAgain, false);
-    ui.optionDisconnectButton.addEventListener("touchend", disconnect, false);
-    ui.bitcoinUriClearButton.addEventListener("touchend", waiting, false);
-    ui.connectScanButton.addEventListener("touchend", connectScan, false);
-    ui.optionScanButton.addEventListener("touchend", startScan, false);
-    ui.blinkDelButton.addEventListener("touchend", blinkDel, false);
-    ui.blink1Button.addEventListener("touchend", blinkPress1, false);
-    ui.blink2Button.addEventListener("touchend", blinkPress2, false);
-    ui.blink3Button.addEventListener("touchend", blinkPress3, false);
-    ui.blink4Button.addEventListener("touchend", blinkPress4, false);
+    Display.registerTouch(ui.header, hideOptionButtons);
+    Display.registerTouch(ui.optionsIcon, toggleOptions);
+    Display.registerTouch(ui.optionCheckUpdateButton, function(){ checkUpdatePost(true) });
+    Display.registerTouch(ui.optionServerUrlChangeButton, serverUrl);
+    Display.registerTouch(ui.serverUrlSubmitButton, serverUrlSubmit);
+    Display.registerTouch(ui.serverUrlRestoreDefaultButton, serverUrlRestoreDefault);
+    Display.registerTouch(ui.serverErrorSettingsButton, serverUrl);
+    Display.registerTouch(ui.serverErrorCancelButton, serverUrlCancel);
+    Display.registerTouch(ui.checkUpdateUrlFollowButton, followUrl);
+    Display.registerTouch(ui.checkUpdateCloseButton, waiting);
+    Display.registerTouch(ui.randomNumberButton, randomNumberClear);
+    Display.registerTouch(ui.receiveScanButton, startScan);
+    Display.registerTouch(ui.receiveClearButton, waiting);
+    Display.registerTouch(ui.sendCancelButton, waiting);
+    Display.registerTouch(ui.sendDetailsButton, sendDetails);
+    Display.registerTouch(ui.lockSendAcceptButton, sendLockPin);
+    Display.registerTouch(ui.lockSendCancelButton, sendLockCancel);
+    Display.registerTouch(ui.lockSendDetailsButton, sendDetails);
+    //Display.registerTouch(ui.pairManualButton, pairManual);
+    Display.registerTouch(ui.pairBeginButton, pairBegin);
+    Display.registerTouch(ui.pairRetryButton, function(){ displayDialog(dialog.pairDbb) });
+    Display.registerTouch(ui.pairSuccessButton, waiting);
+    Display.registerTouch(ui.pairExistsPairButton, function(){ displayDialog(dialog.pairDbb) });
+    Display.registerTouch(ui.pairExistsContinueButton, waiting);
+    Display.registerTouch(ui.parseErrorPairButton, function(){ displayDialog(dialog.pairDbb) });
+    Display.registerTouch(ui.parseErrorCancelButton, waiting);
+    Display.registerTouch(ui.txErrorPairButton, function(){ displayDialog(dialog.pairDbb) });
+    Display.registerTouch(ui.txErrorCancelButton, waiting);
+    Display.registerTouch(ui.optionPairAgainButton, pairAgain);
+    Display.registerTouch(ui.optionDisconnectButton, disconnect);
+    Display.registerTouch(ui.bitcoinUriClearButton, waiting);
+    Display.registerTouch(ui.connectScanButton, connectScan);
+    Display.registerTouch(ui.optionScanButton, startScan);
+    Display.registerTouch(ui.optionScan2Button, startScan);
+    Display.registerTouch(ui.blinkDelButton, blinkDel);
+    Display.registerTouch(ui.blink1Button, blinkPress1);
+    Display.registerTouch(ui.blink2Button, blinkPress2);
+    Display.registerTouch(ui.blink3Button, blinkPress3);
+    Display.registerTouch(ui.blink4Button, blinkPress4);
 
 
     if (device.platform == 'iOS') {
@@ -289,8 +293,28 @@ function fade(element) {
 }
 
 function startUp() {
-    comserver_url = (localData.server_url == '') ? default_server_url : localData.server_url;
-    ui.serverUrlText.value = comserver_url;
+    let query = window.location.search;
+    if (typeof query != 'undefined') {
+        let serverParamPos = query.indexOf("&server=");
+        let payload = '';
+        let server = '';
+        if (serverParamPos == -1) {
+            payload = decodeURIComponent(query.substring('?data='.length));
+        } else {
+            payload = decodeURIComponent(query.substring('?data='.length, serverParamPos));
+            server = decodeURIComponent(query.substring(serverParamPos + '&server='.length));
+        }
+        console.log("Received server: " + server);
+        localData.server_url = server;
+        comserver_url = server != '' ? server : default_server_url;
+        ui.serverUrlText.value = comserver_url;
+        writeLocalData();
+        console.log("Received payload: " + payload);
+        parseData(payload);
+    } else {
+        comserver_url = (localData.server_url == '') ? default_server_url : localData.server_url;
+        ui.serverUrlText.value = comserver_url;
+    }
     if (localData.server_id === "" || localData.server_id === undefined) {
         console.log('State - no server id.');
         disableConnectOptionsButtons(true);
@@ -393,19 +417,51 @@ function serverPoll() {
     }
 }
 
-function serverSendEncrypt(msg) {
-    msg = aes_cbc_b64_encrypt(msg, localData.server_key);
-    serverSend(msg);
+function appendHMAC(ciphertext, authenticationKey) {
+    const buffer = new Buffer(ciphertext, "base64");
+    const key = new Buffer(authenticationKey, "hex");
+    const hmac = Crypto.createHmac("sha256", key).update(buffer).digest();
+    return Buffer.concat([buffer, hmac]).toString("base64");
 }
 
-function serverSend(msg) {
+function serverSendEncrypt(msg, server, channelID, encryptionKey, authenticationKey, successCallback, errorCallback) {
+    encryptionKey = encryptionKey || localData.server_key;
+    msg = aes_cbc_b64_encrypt(msg, encryptionKey);
+    if (authenticationKey != undefined) {
+        msg = appendHMAC(msg, authenticationKey);
+    }
+    serverSend(msg, server, channelID, successCallback, errorCallback);
+}
+
+function serverSend(msg, server, channelID, successCallback, errorCallback) {
     console.log('Sending to server:', msg);
+
+    if (channelID === undefined) {
+        channelID = localData.server_id;
+    }
+    server = server || comserver_url;
+
     var rn = Math.floor((Math.random() * 100000) + 1);
-    var postContent = '&c=data&uuid=' + localData.server_id + '&pl=' + msg + '&dt=1';
+    var postContent = '&c=data&uuid=' + channelID + '&pl=' + msg + '&dt=1';
     var req = new XMLHttpRequest();
-    req.open("POST", comserver_url + '?rn=' + rn, true);
+    req.open("POST", server + '?rn=' + rn, true);
     req.setRequestHeader('Content-type','application/text; charset=utf-8');
     req.send(postContent);
+
+    req.onreadystatechange = function () {
+        if (req.readyState === 4) {
+            if (req.status === 200) {
+                if (successCallback != undefined) {
+                    successCallback();
+                }
+            } else {
+                console.log('send failed: status: ' + req.status + ', response: ' + req.responseText);
+                if (errorCallback != undefined) {
+                    errorCallback();
+                }
+            }
+        }   
+    }
 }
 
 function checkUpdatePost(display) {
@@ -482,13 +538,12 @@ function disconnect() {
     serverSendEncrypt('{"action":"disconnect"}');
     hideOptionButtons();
     disableConnectOptionsButtons(true);
-    setTimeout(function() { 
-        displayDialog(dialog.connectPc);
-        localData.server_id = "";
-        localData.server_key = "";
-        localData.verification_key = "";
-        writeLocalData();
-    }, 500);
+    localData.server_id = "";
+    localData.server_key = "";
+    localData.verification_key = "";
+    writeLocalData(function () {
+        window.location.href = "index.html";
+    });
 }
             
 function waiting() {
@@ -663,13 +718,69 @@ function readLocalData() {
     }
 }
 
-function writeLocalData() {
+function writeLocalData(callback) {
 	try {
         if (!localDataFile) return;
         localDataFile.createWriter(function(fileWriter) {
+            fileWriter.onwriteend = function (e) {
+                if (typeof callback != 'undefined') {
+                    callback();
+                }
+            }
             var blob = new Blob([JSON.stringify(localData)], {type:"text/plain"});
             fileWriter.write(blob);
         })
+    }
+    catch(err) {
+        console.log(err.message);
+    }
+}
+
+/**
+ * Converts the local data to the new format, deriving a bitbox encryption and authentication
+ * key from the existing shared secret and redirects to the new app.
+ */
+function convertDataToNewFormat(data) {
+    try {
+        let newFormat = {
+            serverURL: localData.default_server_url,
+            channelID: data.id,
+            // encrypts communication between Desktop app and mobile
+            encryptionKey: new Buffer(data.key, 'base64').toString('hex'),
+            // authenticates communication between Desktop app and mobile
+            authenticationKey: new Buffer(data.mac, 'base64').toString('hex'),
+            // encrypts communication between BitBox and mobile
+            bitboxEncryptionKey: "",
+            // authenticates communication between BitBox and mobile
+            bitboxAuthenticationKey: "",
+            bitpos: 0,
+            bytepos: 0,
+        };
+
+        if (data.connectOnly === true && localData.verification_key.length > 0) {
+            let shared_secret = Crypto.createHash('sha512').update(new Buffer(localData.verification_key, 'hex')).digest();
+            let len = shared_secret.length / 2
+
+            newFormat.bitboxEncryptionKey = shared_secret.slice(0, len).toString('hex')
+            newFormat.bitboxAuthenticationKey = shared_secret.slice(len, shared_secret.length).toString('hex')
+        }
+
+        window.resolveLocalFileSystemURL(cordova.file.dataDirectory, function(dir) {
+            dir.getFile("data.txt", {create:true}, function(file) {
+                file.createWriter(function(fileWriter) {
+                    fileWriter.onwriteend = function (e) {
+                        serverSendEncrypt('{"id":"success"}', newFormat.serverURL, newFormat.channelID,
+                            newFormat.encryptionKey, newFormat.authenticationKey, function () {
+                                window.location.href = "index_new.html";
+                            }, function () {
+                                console.log("TODO: display error dialog");
+                                });
+                    };
+                    var blob = new Blob([JSON.stringify(newFormat)], { type: "text/plain" });
+                    fileWriter.write(blob);
+                });
+            })
+	    })
     }
     catch(err) {
         console.log(err.message);
@@ -1203,7 +1314,6 @@ function parseData(data)
         
         data = JSON.parse(data);
         
-
         // Tests if already paired to Digital Bitbox
         if (typeof data.tfa == "string") {
             console.log('tfa value', data.tfa);
@@ -1233,6 +1343,12 @@ function parseData(data)
                 serverSendEncrypt('{"action":"pong"}');
                 return;
             }
+        }
+
+        if (typeof data.mac == "string") {
+            console.log('Detected QR code for new app');
+            convertDataToNewFormat(data);
+            return;
         }
 
         // Sets up connection to desktop app

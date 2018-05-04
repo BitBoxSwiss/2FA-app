@@ -181,6 +181,11 @@ pre {
     border-right:4px solid #888;
 }
 
+div.disabled > .buttonCircle {
+    color:#888888;
+    background-color:#CCCCCC;
+    border-color:#CCCCCC;
+}
 
 .buttonCircle {
     color:#444444;
@@ -354,3 +359,7 @@ pre {
     display:inline;
 }
 
+.errorText {
+    color: #ff0000;
+    font-style: italic;
+}
