@@ -22,26 +22,24 @@ Requires:
 Command line build and install:
 
 ```
-git clone https://github.com/digitalbitbox/2FA-app.git 
+git clone https://github.com/digitalbitbox/2FA-app.git
 cordova create digitalbitbox2FA com.digitalbitbox.tfa "DigitalBitbox2FA" --copy-from=./2FA-app/
 cd digitalbitbox2FA
-cordova platform add android 
-cordova plugin add phonegap-plugin-barcodescanner
-cordova plugin add cordova-plugin-crosswalk-webview
-cordova plugin add cordova-plugin-network-information
-cordova plugin add cordova-plugin-whitelist
-cordova plugin add cordova-plugin-inappbrowser
-cordova plugin add cordova-plugin-statusbar
-cordova plugin add cordova-plugin-device
+cordova prepare
 npm install bitcore-lib buffer-reverse
+
+Insert after “buildscript” in “platforms/android/app/build.gradle”:
+configurations.all {
+   resolutionStrategy {
+       force 'com.android.support:support-v4:27.1.0'
+   }
+}
+
+# After code edits:
 browserify www/js/main.js -o www/js/app.js
 cordova build android
 ```
 
-To install on an Android phone, connect it to your computer and type  `cordova run android`. [Developer permissions](https://developer.android.com/tools/device.html) are required. 
+To install on an Android phone, connect it to your computer and type  `cordova run android`. [Developer permissions](https://developer.android.com/tools/device.html) are required.
 
 To install on an iPhone, replace `android` with `ios` and open the file `platforms/ios/Digital Bitbox QR.xcodeproj` in Xcode. An iOS Developer Program membership, or a jailbroke phone, is required.
-
-
-
-
