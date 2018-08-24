@@ -1,0 +1,13 @@
+sudo: required
+
+services:
+  - docker
+
+addons:
+  apt:
+    packages:
+      - curl
+      - gnupg2
+
+script:
+- docker build --tag bitbox-2fa-app-ci -f Dockerfile.travis .
