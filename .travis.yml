@@ -3,6 +3,10 @@ sudo: required
 services:
   - docker
 
+os:
+  - linux
+  - osx
+
 addons:
   apt:
     packages:
@@ -10,4 +14,4 @@ addons:
       - gnupg2
 
 script:
-- docker build --tag bitbox-2fa-app-ci -f Dockerfile.travis .
+- ./scripts/travis-ci.sh
