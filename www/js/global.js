@@ -1,4 +1,4 @@
-global.VERSION = '3.0.0'; // match to version in config.xml
+global.VERSION = '3.0.2'; // match to version in config.xml
 
 global.DEFAULT_SERVER_URL = "https://digitalbitbox.com/smartverification/index.php",
     comserver_url = "";

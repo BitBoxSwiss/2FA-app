@@ -33,6 +33,7 @@ var Reverse = require("buffer-reverse");
 
 var Display = require("./display.js");
 var Update = require("./update.js");
+var _get = require('lodash.get');
 require("./global.js");
 
 // map of coin name to Bitcore network names.
@@ -153,6 +154,8 @@ var ui = {
     pairSuccessButton: null,
     pairExistsDialog: null,
     pairExistsContinueButton: null,
+    apiErrorDialog: null,
+    apiErrorCancelButton: null,
     parseErrorDialog: null,
     parseErrorCancelButton: null,
     txErrorDialog: null,
@@ -289,6 +292,7 @@ function init()
     Display.registerTouch(ui.pairChallengeCancelButton, pairChallengeCancel);
     Display.registerTouch(ui.pairSuccessButton, waiting);
     Display.registerTouch(ui.pairExistsContinueButton, waiting);
+    Display.registerTouch(ui.apiErrorCancelButton, waiting);
     Display.registerTouch(ui.parseErrorCancelButton, waiting);
     Display.registerTouch(ui.txErrorCancelButton, waiting);
     Display.registerTouch(ui.optionDisconnectButton, function() {
@@ -916,7 +920,12 @@ function getInputs(coin, inputAndChangeType, transaction, sign) {
                 } else {
                     reply = true;
                     responseCount++;
-                    var txData = new Bitcore.Transaction(JSON.parse(e.data.response).rawtx);
+                    // If we don't get a raw binary Tx from the API, specify the JSON field where the raw data is
+                    if (e.field) {
+                        var txData = new Bitcore.Transaction(_get(JSON.parse(e.data.response), e.field));
+                    } else {
+                        var txData = new Bitcore.Transaction(e.data.response);
+                    }
                     var inputIndex = e.data.meta;
                     var input = transaction.inputs[inputIndex].toObject();
                     pair.prevOutputs[inputIndex] = txData.outputs[input.outputIndex].toObject();
@@ -931,34 +940,45 @@ function getInputs(coin, inputAndChangeType, transaction, sign) {
                 req.open("GET", get.url, false);
                 req.send(null);
                 if (req.status == 200)
-                    onMessage({ 'data': { 'response': req.responseText, 'meta': get.meta } });
+                    onMessage({ 'data': { 'response': req.responseText, 'meta': get.meta }, 'field': get.field });
                 else
                     onMessage(null);
             };
             switch(coin) {
             case "btc":
-                blockexplorer_fail_limit = 2;
-                postMessage({ url: "https://blockexplorer.com/api/rawtx/" + input.prevTxId, meta: inputIndex });
-                postMessage({ url: "https://insight.bitpay.com/api/rawtx/" + input.prevTxId, meta: inputIndex });
+                blockexplorer_fail_limit = 5;
+                postMessage({ url: "https://blockchain.info/rawtx/" + input.prevTxId + "?format=hex", meta: inputIndex });
+                postMessage({ url: "https://blockstream.info/api/tx/" + input.prevTxId + "/hex", meta: inputIndex });
+                postMessage({ url: "https://chain.so/api/v2/get_tx/BTC/" + input.prevTxId, meta: inputIndex, field: "data.tx_hex" });
+                postMessage({ url: "https://api.bitaps.com/btc/v1/blockchain/transaction/" + input.prevTxId, meta: inputIndex, field: "data.rawTx" });
+                postMessage({ url: "https://api.blockcypher.com/v1/btc/main/txs/" + input.prevTxId + "?limit=50&includeHex=true", meta: inputIndex, field: "hex" });
                 break;
             case "tbtc":
-                blockexplorer_fail_limit = 1;
-                postMessage({ url: "https://testnet.blockexplorer.com/api/rawtx/" + input.prevTxId, meta: inputIndex });
+                blockexplorer_fail_limit = 5;
+                postMessage({ url: "https://testnet.blockchain.info/rawtx/" + input.prevTxId + "?format=hex", meta: inputIndex });
+                postMessage({ url: "https://blockstream.info/testnet/api/tx/" + input.prevTxId + "/hex", meta: inputIndex });
+                postMessage({ url: "https://chain.so/api/v2/get_tx/BTCTEST/" + input.prevTxId, meta: inputIndex, field: "data.tx_hex" });
+                postMessage({ url: "https://api.bitaps.com/btc/testnet/v1/blockchain/transaction/" + input.prevTxId, meta: inputIndex, field: "data.rawTx" });
+                postMessage({ url: "https://api.blockcypher.com/v1/btc/test3/txs/" + input.prevTxId + "?limit=50&includeHex=true", meta: inputIndex, field: "hex" });
                 break;
             case "ltc":
-                blockexplorer_fail_limit = 1;
-                postMessage({ url: "https://insight.litecore.io/api/rawtx/" + input.prevTxId, meta: inputIndex });
+                blockexplorer_fail_limit = 3;
+                postMessage({ url: "https://api.bitaps.com/ltc/v1/blockchain/transaction/" + input.prevTxId, meta: inputIndex, field: "data.rawTx" });
+                postMessage({ url: "https://chain.so/api/v2/get_tx/LTC/" + input.prevTxId, meta: inputIndex, field: "data.tx_hex" });
+                postMessage({ url: "https://api.blockcypher.com/v1/ltc/main/txs/" + input.prevTxId + "?limit=50&includeHex=true", meta: inputIndex, field: "hex" });
                 break;
             case "tltc":
-                blockexplorer_fail_limit = 1;
-                postMessage({ url: "https://testnet.insight.litecore.io/api/rawtx/" + input.prevTxId, meta: inputIndex });
+                blockexplorer_fail_limit = 2;
+                postMessage({ url: "https://api.bitaps.com/ltc/testnet/v1/blockchain/transaction/" + input.prevTxId, meta: inputIndex, field: "data.rawTx" });
+                postMessage({ url: "https://chain.so/api/v2/get_tx/LTCTEST/" + input.prevTxId, meta: inputIndex, field: "data.tx_hex" });
                 break;
             }
         }
     }
     catch(err) {
         console.log('Could not get inputs. Unknown error.', err);
-        process_verify_transaction(coin, inputAndChangeType, transaction, sign);
+        Display.displayDialog(dialog.apiError, dialog);
+        return;
     }
 }
 
