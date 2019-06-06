@@ -912,20 +912,26 @@ function getInputs(coin, inputAndChangeType, transaction, sign) {
                 }
                 if (e && e.data) {
                     try {
-                        responseCount++;
                         // If we don't get a raw binary Tx from the API, specify the JSON field where the raw data is
                         if (e.field) {
                             var txData = new Bitcore.Transaction(_get(JSON.parse(e.data.response), e.field));
                         } else {
                             var txData = new Bitcore.Transaction(e.data.response);
                         }
+                        responseCount++;
                         var inputIndex = e.data.meta;
                         var input = transaction.inputs[inputIndex].toObject();
                         pair.prevOutputs[inputIndex] = txData.outputs[input.outputIndex].toObject();
                         reply = true;
                     }
                     catch(err) {
-                        // pass
+                        console.log("Invalid response from blockexplorer API")
+                        blockexplorer_count++;
+                        if (blockexplorer_count >= blockexplorer_fail_limit) {
+                            console.log('Error: could not get address balances.');
+                            responseCount++;
+                            pair.blockExplorerError = true;
+                        }
                     }
                 } else {
                     blockexplorer_count++;
