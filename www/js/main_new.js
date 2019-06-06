@@ -292,7 +292,7 @@ function init()
     Display.registerTouch(ui.pairChallengeCancelButton, pairChallengeCancel);
     Display.registerTouch(ui.pairSuccessButton, waiting);
     Display.registerTouch(ui.pairExistsContinueButton, waiting);
-    Display.registerTouch(ui.apiErrorCancelButton, waiting);
+    Display.registerTouch(ui.apiErrorCancelButton, sendLockCancel);
     Display.registerTouch(ui.parseErrorCancelButton, waiting);
     Display.registerTouch(ui.txErrorCancelButton, waiting);
     Display.registerTouch(ui.optionDisconnectButton, function() {
