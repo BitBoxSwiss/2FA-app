@@ -910,25 +910,30 @@ function getInputs(coin, inputAndChangeType, transaction, sign) {
                     console.log("ignoring second reply for input ", inputIndex);
                     return;
                 }
-                if (e.data === null) {
+                if (e && e.data) {
+                    try {
+                        responseCount++;
+                        // If we don't get a raw binary Tx from the API, specify the JSON field where the raw data is
+                        if (e.field) {
+                            var txData = new Bitcore.Transaction(_get(JSON.parse(e.data.response), e.field));
+                        } else {
+                            var txData = new Bitcore.Transaction(e.data.response);
+                        }
+                        var inputIndex = e.data.meta;
+                        var input = transaction.inputs[inputIndex].toObject();
+                        pair.prevOutputs[inputIndex] = txData.outputs[input.outputIndex].toObject();
+                        reply = true;
+                    }
+                    catch(err) {
+                        // pass
+                    }
+                } else {
                     blockexplorer_count++;
                     if (blockexplorer_count >= blockexplorer_fail_limit) {
                         console.log('Error: could not get address balances.');
                         responseCount++;
                         pair.blockExplorerError = true;
                     }
-                } else {
-                    reply = true;
-                    responseCount++;
-                    // If we don't get a raw binary Tx from the API, specify the JSON field where the raw data is
-                    if (e.field) {
-                        var txData = new Bitcore.Transaction(_get(JSON.parse(e.data.response), e.field));
-                    } else {
-                        var txData = new Bitcore.Transaction(e.data.response);
-                    }
-                    var inputIndex = e.data.meta;
-                    var input = transaction.inputs[inputIndex].toObject();
-                    pair.prevOutputs[inputIndex] = txData.outputs[input.outputIndex].toObject();
                 }
                 if (responseCount >= transaction.inputs.length) {
                     process_verify_transaction(coin, inputAndChangeType, transaction, sign);
