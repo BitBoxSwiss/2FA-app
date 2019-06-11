@@ -898,23 +898,24 @@ function getInputs(coin, inputAndChangeType, transaction, sign) {
     pair.prevOutputs = new Array(transaction.inputs.length);
     pair.blockExplorerError = false;
     try {
+        var blockWorker = new Worker("js/getData.js");
         var responseCount = 0;
+        var reply = new Array(transaction.inputs.length).fill(false);
+        var blockexplorer_count = new Array(transaction.inputs.length).fill(0);
+        var blockexplorer_fail_limit;
         for (var inputIndex = 0; inputIndex < transaction.inputs.length; inputIndex++) {
             var input = transaction.inputs[inputIndex].toObject();
+            blockWorker.onmessage = function(e) {
 
-            var reply = false,
-                blockexplorer_fail_limit,
-                blockexplorer_count = 0;
-            var onMessage = function(e) {
-                if (reply) {
+                if (reply[inputIndex]) {
                     console.log("ignoring second reply for input ", inputIndex);
                     return;
                 }
                 if (e && e.data) {
                     try {
                         // If we don't get a raw binary Tx from the API, specify the JSON field where the raw data is
-                        if (e.field) {
-                            var txData = new Bitcore.Transaction(_get(JSON.parse(e.data.response), e.field));
+                        if (e.data.field) {
+                            var txData = new Bitcore.Transaction(_get(JSON.parse(e.data.response), e.data.field));
                         } else {
                             var txData = new Bitcore.Transaction(e.data.response);
                         }
@@ -922,74 +923,66 @@ function getInputs(coin, inputAndChangeType, transaction, sign) {
                         var inputIndex = e.data.meta;
                         var input = transaction.inputs[inputIndex].toObject();
                         pair.prevOutputs[inputIndex] = txData.outputs[input.outputIndex].toObject();
-                        reply = true;
+                        reply[inputIndex] = true;
                     }
                     catch(err) {
                         console.log("Invalid response from blockexplorer API")
-                        blockexplorer_count++;
-                        if (blockexplorer_count >= blockexplorer_fail_limit) {
+                        blockexplorer_count[inputIndex]++;
+                        if (blockexplorer_count[inputIndex] >= blockexplorer_fail_limit) {
                             console.log('Error: could not get address balances.');
                             responseCount++;
                             pair.blockExplorerError = true;
                         }
                     }
                 } else {
-                    blockexplorer_count++;
-                    if (blockexplorer_count >= blockexplorer_fail_limit) {
+                    blockexplorer_count[inputIndex]++;
+                    if (blockexplorer_count[inputIndex] >= blockexplorer_fail_limit) {
                         console.log('Error: could not get address balances.');
                         responseCount++;
                         pair.blockExplorerError = true;
                     }
                 }
                 if (responseCount >= transaction.inputs.length) {
+                    blockWorker.terminate();
                     process_verify_transaction(coin, inputAndChangeType, transaction, sign);
                 }
 
             };
-            var postMessage = function(get) {
-                var req = new XMLHttpRequest();
-                req.open("GET", get.url, false);
-                req.send(null);
-                if (req.status == 200)
-                    onMessage({ 'data': { 'response': req.responseText, 'meta': get.meta }, 'field': get.field });
-                else
-                    onMessage(null);
-            };
             switch(coin) {
             case "btc":
                 blockexplorer_fail_limit = 5;
-                postMessage({ url: "https://blockchain.info/rawtx/" + input.prevTxId + "?format=hex", meta: inputIndex });
-                postMessage({ url: "https://blockstream.info/api/tx/" + input.prevTxId + "/hex", meta: inputIndex });
-                postMessage({ url: "https://chain.so/api/v2/get_tx/BTC/" + input.prevTxId, meta: inputIndex, field: "data.tx_hex" });
-                postMessage({ url: "https://api.bitaps.com/btc/v1/blockchain/transaction/" + input.prevTxId, meta: inputIndex, field: "data.rawTx" });
-                postMessage({ url: "https://api.blockcypher.com/v1/btc/main/txs/" + input.prevTxId + "?limit=50&includeHex=true", meta: inputIndex, field: "hex" });
+                blockWorker.postMessage({ url: "https://blockchain.info/rawtx/" + input.prevTxId + "?format=hex", meta: inputIndex });
+                blockWorker.postMessage({ url: "https://blockstream.info/api/tx/" + input.prevTxId + "/hex", meta: inputIndex });
+                blockWorker.postMessage({ url: "https://chain.so/api/v2/get_tx/BTC/" + input.prevTxId, meta: inputIndex, field: "data.tx_hex" });
+                blockWorker.postMessage({ url: "https://api.bitaps.com/btc/v1/blockchain/transaction/" + input.prevTxId, meta: inputIndex, field: "data.rawTx" });
+                blockWorker.postMessage({ url: "https://api.blockcypher.com/v1/btc/main/txs/" + input.prevTxId + "?limit=50&includeHex=true", meta: inputIndex, field: "hex" });
                 break;
             case "tbtc":
                 blockexplorer_fail_limit = 5;
-                postMessage({ url: "https://testnet.blockchain.info/rawtx/" + input.prevTxId + "?format=hex", meta: inputIndex });
-                postMessage({ url: "https://blockstream.info/testnet/api/tx/" + input.prevTxId + "/hex", meta: inputIndex });
-                postMessage({ url: "https://chain.so/api/v2/get_tx/BTCTEST/" + input.prevTxId, meta: inputIndex, field: "data.tx_hex" });
-                postMessage({ url: "https://api.bitaps.com/btc/testnet/v1/blockchain/transaction/" + input.prevTxId, meta: inputIndex, field: "data.rawTx" });
-                postMessage({ url: "https://api.blockcypher.com/v1/btc/test3/txs/" + input.prevTxId + "?limit=50&includeHex=true", meta: inputIndex, field: "hex" });
+                blockWorker.postMessage({ url: "https://testnet.blockchain.info/rawtx/" + input.prevTxId + "?format=hex", meta: inputIndex });
+                blockWorker.postMessage({ url: "https://blockstream.info/testnet/api/tx/" + input.prevTxId + "/hex", meta: inputIndex });
+                blockWorker.postMessage({ url: "https://chain.so/api/v2/get_tx/BTCTEST/" + input.prevTxId, meta: inputIndex, field: "data.tx_hex" });
+                blockWorker.postMessage({ url: "https://api.bitaps.com/btc/testnet/v1/blockchain/transaction/" + input.prevTxId, meta: inputIndex, field: "data.rawTx" });
+                blockWorker.postMessage({ url: "https://api.blockcypher.com/v1/btc/test3/txs/" + input.prevTxId + "?limit=50&includeHex=true", meta: inputIndex, field: "hex" });
                 break;
             case "ltc":
                 blockexplorer_fail_limit = 3;
-                postMessage({ url: "https://api.bitaps.com/ltc/v1/blockchain/transaction/" + input.prevTxId, meta: inputIndex, field: "data.rawTx" });
-                postMessage({ url: "https://chain.so/api/v2/get_tx/LTC/" + input.prevTxId, meta: inputIndex, field: "data.tx_hex" });
-                postMessage({ url: "https://api.blockcypher.com/v1/ltc/main/txs/" + input.prevTxId + "?limit=50&includeHex=true", meta: inputIndex, field: "hex" });
+                blockWorker.postMessage({ url: "https://api.bitaps.com/ltc/v1/blockchain/transaction/" + input.prevTxId, meta: inputIndex, field: "data.rawTx" });
+                blockWorker.postMessage({ url: "https://chain.so/api/v2/get_tx/LTC/" + input.prevTxId, meta: inputIndex, field: "data.tx_hex" });
+                blockWorker.postMessage({ url: "https://api.blockcypher.com/v1/ltc/main/txs/" + input.prevTxId + "?limit=50&includeHex=true", meta: inputIndex, field: "hex" });
                 break;
             case "tltc":
                 blockexplorer_fail_limit = 2;
-                postMessage({ url: "https://api.bitaps.com/ltc/testnet/v1/blockchain/transaction/" + input.prevTxId, meta: inputIndex, field: "data.rawTx" });
-                postMessage({ url: "https://chain.so/api/v2/get_tx/LTCTEST/" + input.prevTxId, meta: inputIndex, field: "data.tx_hex" });
+                blockWorker.postMessage({ url: "https://api.bitaps.com/ltc/testnet/v1/blockchain/transaction/" + input.prevTxId, meta: inputIndex, field: "data.rawTx" });
+                blockWorker.postMessage({ url: "https://chain.so/api/v2/get_tx/LTCTEST/" + input.prevTxId, meta: inputIndex, field: "data.tx_hex" });
                 break;
             }
         }
     }
     catch(err) {
         console.log('Could not get inputs. Unknown error.', err);
-        Display.displayDialog(dialog.apiError, dialog);
-        return;
+        blockWorker.terminate();
+        process_verify_transaction(coin, inputAndChangeType, transaction, sign);
     }
 }
 
