@@ -761,8 +761,6 @@ function pairManual() {
 
 function loadLocalData() {
     try {
-        // debug in browser:
-        // localData = {"channelID":"C26UoG8xA6f3YCXYxAQWFGim839XZSEYWA2qTm5rSoqJ","encryptionKey":"G5NOcIpbE5h8lyfhyP9i80ETX5ipGiOua4rM7V0Jzcc=","serverURL":"","bitboxEncryptionKey":"ac248c9305b72adcffe024f2b4d7e724bb9ab2ef8f84be926623e3450df6b43d","authenticationKey":"oJ+nFl22CHZq5DHWHAVKCC8Z5d0XdQSBKYfKbLDlK58=","bitpos":2,"bytepos":4,"hash_pubkey_bitbox":"dd4942a4cd396c72a4c4d63f2e41033564e16f5298a87d5e08daa48cc40e2db8"};
         window.resolveLocalFileSystemURL(cordova.file.dataDirectory, function(dir) {
             dir.getFile("data.txt", {create:true}, function(file) {
                 localDataFile = file;
