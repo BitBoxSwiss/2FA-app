@@ -6,7 +6,7 @@ onmessage = function(get) {
     req.onreadystatechange = function() {
         if (req.readyState == 4) {
             if (req.status == 200)
-                postMessage({ 'response': req.responseText, 'meta': get.data.meta });
+                postMessage({ 'response': req.responseText, 'meta': get.data.meta, 'field': get.data.field });
             else
                 postMessage(null);
         }
