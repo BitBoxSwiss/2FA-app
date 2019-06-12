@@ -1,7 +1,7 @@
-## Digital Bitbox | Smart Verification & Two Factor Authentication mobile app
+## Smart Verification & Two Factor Authentication mobile app
 
 
-Use with the [Digital Bitbox](https://digitalbitbox.com) hardware wallet to provide the highest level of security.
+Use with the [BitBox01](https://shiftcrypto.ch) hardware wallet for added security.
 
 
 ## Installation
