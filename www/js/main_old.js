@@ -1,5 +1,5 @@
 /*
- 
+
  The MIT License (MIT)
 
  Copyright (c) 2015 Douglas J. Bakkum, Shift Devices AG
@@ -46,7 +46,7 @@ var DBB_COLOR_SAFE = "#0C0",
     DBB_COLOR_WARN = "#880",
     DBB_COLOR_DANGER = "#C00",
     DBB_COLOR_BLACK = "#000";
-    
+
 var OP_CHECKMULTISIG = 'ae',
     OP_1 = '51';
 
@@ -121,8 +121,8 @@ var ui = {
     bitcoinUriAmount: null,
     bitcoinUriClearButton: null,
     optionsIcon: null,
-    optionScanButton: null, 
-    optionScan2Button: null, 
+    optionScanButton: null,
+    optionScan2Button: null,
     optionDisconnectButton: null,
     optionPairAgainButton: null,
     splashScreen: null,
@@ -170,7 +170,7 @@ var server_poll_pause = false,
 
 // ----------------------------------------------------------------------------
 // Startup
-// 
+//
 
 document.addEventListener("deviceready", init, false);
 
@@ -182,7 +182,7 @@ function init()
     Array.prototype.forEach.call( ids, function( element, i ) {
         var id = element.id;
         id = id.replace(/-([a-z])/g, function (g) { return g[1].toUpperCase(); });
-        ui[id] = element;     
+        ui[id] = element;
         if (id.includes('Dialog'))
             dialog[id.replace('Dialog', '')] = element;
     });
@@ -196,7 +196,7 @@ function init()
         throw "Missing UI element: " + u;
       }
       ui[u] = element;
-        
+
       if (u.includes('Dialog'))
           dialog[u.replace('Dialog', '')] = element;
     }
@@ -258,10 +258,10 @@ function init()
 
     if (navigator && navigator.splashscreen)
         navigator.splashscreen.hide();
-    fade(ui.splashScreen); 
-    
+    fade(ui.splashScreen);
+
     loadLocalData();
-    
+
     ui.connectCheck.innerHTML = connectCheckingText;
     setTimeout(startUp, 2000);
 }
@@ -274,7 +274,7 @@ function touchStart(e)
 
 function touchEnd(e)
 {
-    // match with index.css 
+    // match with index.css
     e.style.color = '#000';
     e.style.backgroundColor = '#fff';
 }
@@ -320,7 +320,7 @@ function startUp() {
         disableConnectOptionsButtons(true);
         displayDialog(dialog.connectPc);
     }
-    
+
     else if (localData.verification_key === "" || localData.verification_key === undefined) {
         console.log('State - not paired.');
         displayDialog(dialog.pairDbb);
@@ -358,14 +358,14 @@ function checkConnection() {
 // ----------------------------------------------------------------------------
 // Server communication
 //
-   
+
 function serverPoll() {
 
     if (server_poll_pause) {
         setTimeout(serverPoll, 2000);
         return;
     }
-    
+
     if (navigator.connection.type === Connection.NONE) {
         if (!verification_in_progress)
             displayDialog(dialog.connectCheck);
@@ -384,7 +384,7 @@ function serverPoll() {
         setTimeout(serverPoll, 2000);
         return;
     }
-    
+
     try {
         var req = new XMLHttpRequest();
         req.open("GET", comserver_url + '?c=gd&uuid=' + localData.server_id + '&dt=1', true);
@@ -460,7 +460,7 @@ function serverSend(msg, server, channelID, successCallback, errorCallback) {
                     errorCallback();
                 }
             }
-        }   
+        }
     }
 }
 
@@ -494,13 +494,13 @@ function checkUpdatePost(display) {
 //
 
 function displayDialog(D) {
-    
+
     //console.log("dialog", D);
-    
+
     for (var d in dialog)
         dialog[d].style.display = "none";
     if (D)
-        D.style.display = "block"; 
+        D.style.display = "block";
 }
 
 function showOptionButtons() {
@@ -534,7 +534,7 @@ function disableConnectOptionsButtons(disable)
 function disconnect() {
     if (connect_option_buttons_disabled)
         return;
-    
+
     serverSendEncrypt('{"action":"disconnect"}');
     hideOptionButtons();
     disableConnectOptionsButtons(true);
@@ -545,7 +545,7 @@ function disconnect() {
         window.location.href = "index.html";
     });
 }
-            
+
 function waiting() {
     server_poll_pause = false;
     verification_in_progress = false;
@@ -569,7 +569,7 @@ function serverUrlSubmit() {
     localData.server_url = (ui.serverUrlText.value == default_server_url) ? '' : ui.serverUrlText.value;
     comserver_url = (localData.server_url == '') ? default_server_url : localData.server_url;
     writeLocalData();
-    
+
     if (localData.server_id === '')
         displayDialog(dialog.connectPc);
     else if (localData.verification_key === '')
@@ -587,7 +587,7 @@ function serverUrlRestoreDefault() {
 
 function serverUrlCancel() {
     server_poll_pause = false;
-    
+
     if (localData.server_id === '')
         displayDialog(dialog.connectPc);
     else if (localData.verification_key === '')
@@ -615,7 +615,7 @@ function blinkCodeStrength() {
     } else {
         ui.pairStrength.innerHTML = "&nbsp;";
     }
-        
+
     if (pair.blinkcode.length == 0)
         ui.pairProgress.innerHTML = "&nbsp;";
     else
@@ -637,7 +637,7 @@ function blinkDel() {
         displayDialog(dialog.pairDbb);
     else
         pair.blinkcode.pop();
-    
+
     blinkCodeStrength();
 }
 
@@ -653,7 +653,7 @@ function pairBegin() {
 function pairAgain() {
     if (connect_option_buttons_disabled)
         return;
-    
+
     hideOptionButtons();
     displayDialog(dialog.pairDbb);
 }
@@ -662,11 +662,11 @@ function pairAgain() {
 var Base58Check = require('bs58check');
 function pairManual() {
     displayDialog(null);
-    
+
     var pubkey = ecdhPubkey();
         pubkey = Base58Check.encode(new Buffer(pubkey.toString('hex'), 'hex'));
-    
-    ui.pairManualText.innerHTML = 
+
+    ui.pairManualText.innerHTML =
                 'Enter this in the PC app:<br><br>' +
                 '<span style="color: ' + DBB_COLOR_WARN + ';">' +
                 pubkey.slice(0, pubkey.length / 2) + '<br>' +
@@ -675,7 +675,7 @@ function pairManual() {
                 '- Count the number of blinks in each set.\n' +
                 '- Enter those numbers here.\n' +
                 '- Stop anytime by tapping the Digital Bitbox\'s touch button.</pre>';
-    
+
     serverSendEncrypt('{"ecdh":"manual"}');
 }
 */
@@ -683,16 +683,16 @@ function pairManual() {
 
 // ----------------------------------------------------------------------------
 // Local storage
-// 
+//
 
 function loadLocalData() {
-	try {
+    try {
         window.resolveLocalFileSystemURL(cordova.file.dataDirectory, function(dir) {
             dir.getFile("localdata.txt", {create:true}, function(file) {
-			    localDataFile = file;
-		        readLocalData(); 
+                localDataFile = file;
+                readLocalData();
             })
-	    })
+        })
     }
     catch(err) {
         console.log(err.message);
@@ -719,7 +719,7 @@ function readLocalData() {
 }
 
 function writeLocalData(callback) {
-	try {
+    try {
         if (!localDataFile) return;
         localDataFile.createWriter(function(fileWriter) {
             fileWriter.onwriteend = function (e) {
@@ -780,7 +780,7 @@ function convertDataToNewFormat(data) {
                     fileWriter.write(blob);
                 });
             })
-	    })
+        })
     }
     catch(err) {
         console.log(err.message);
@@ -791,12 +791,12 @@ function convertDataToNewFormat(data) {
 
 // ----------------------------------------------------------------------------
 // Transaction UI
-// 
+//
 
 function sendDetails()
 {
     ui.sendDetails.innerHTML = "<pre>" + tx_details + "</pre>";
-    
+
     if (ui.sendDetails.style.display === "none")
         ui.sendDetails.style.display = "block";
     else
@@ -817,7 +817,7 @@ function sendLockCancel()
 
 // ----------------------------------------------------------------------------
 // Scan UI
-// 
+//
 
 function connectScan()
 {
@@ -833,17 +833,17 @@ function startScan()
     hideOptionButtons();
     try {
     cordova.plugins.barcodeScanner.scan(
-		function (result) {
+        function (result) {
             parseData(result.text);
-        }, 
-		function (error) {
-			console.log("Scanning failed: " + error);
-		},
+        },
+        function (error) {
+            console.log("Scanning failed: " + error);
+        },
         {
           "prompt" : "",
           "formats" : "QR_CODE"
         }
-	);
+    );
     }
     catch(err) {
         console.log(err.message);
@@ -853,7 +853,7 @@ function startScan()
 
 // ----------------------------------------------------------------------------
 // Crypto
-// 
+//
 
 function aes_cbc_b64_decrypt(ciphertext, key)
 {
@@ -871,7 +871,7 @@ function aes_cbc_b64_decrypt(ciphertext, key)
         console.log(err);
         res = ciphertext;
     }
-    
+
     return res;
 }
 
@@ -892,38 +892,38 @@ function aes_cbc_b64_encrypt(plaintext, key)
 function ecdhPubkey() {
     ecdh.generateKeys();
     return ecdh.getPublicKey('hex','compressed'); // 33 bytes
-}    
+}
 
 function getInputs(transaction, sign) {
     var blockWorker = new Worker("js/getData.js");
     var addresses = [];
     var tx = [];
     pair.inputAddresses = [];
-   
-    function onlyUnique(value, index, self) { 
+
+    function onlyUnique(value, index, self) {
         return self.indexOf(value) === index;
     }
 
     try {
         for (var i = 0; i < transaction.inputs.length; i++) {
-            var tr = transaction.toJSON().inputs[i]; 
+            var tr = transaction.toJSON().inputs[i];
             var a = new Bitcore.Script(tr.script)
                                .toAddress(COINNET)
                                .toString();
             addresses.push(a);
-           
+
             var t = {};
             t.address = a;
             t.id = tr.prevTxId;
             tx.push(t);
         }
-        
+
         var unique_addresses = addresses.filter( onlyUnique );
         var addrs = unique_addresses[0];
         for (var i = 1; i < unique_addresses.length; i++) {
             addrs += ',' + unique_addresses[i];
         }
-        
+
         var reply = false,
             blockexplorer_fail_limit = 2,
             blockexplorer_count = 0;
@@ -940,18 +940,18 @@ function getInputs(transaction, sign) {
                 }
                 return;
             }
-            
+
             if (reply)
                 return;
             reply = true;
-            
+
             var ret = JSON.parse(e.data[0]);
 
-            // Reformat JSON from blockr.io 
+            // Reformat JSON from blockr.io
             if (typeof ret.data === 'object') {
                 var tmp = ret.data;
                 ret = [];
-                
+
                 if (tmp.length === undefined || tmp.length == 1) {
                     for (var j = 0; j < tmp.unspent.length; j++) {
                         var t = {};
@@ -960,7 +960,7 @@ function getInputs(transaction, sign) {
                         t.amount = tmp.unspent[j].amount;
                         ret.push(t);
                     }
-                } else { 
+                } else {
                     for (var i = 0; i < tmp.length; i++) {
                         for (var j = 0; j < tmp[i].unspent.length; j++) {
                             var t = {};
@@ -980,7 +980,7 @@ function getInputs(transaction, sign) {
                         input.balance = Number(ret[i].amount) * SAT2BTC;
                         input.address = ret[i].address;
                         input.txid = ret[i].txid;
-                        
+
                         var present = false;
                         for (var k = 0; k < pair.inputAddresses.length; k++) {
                             if (input.address === pair.inputAddresses[k].address) {
@@ -997,7 +997,7 @@ function getInputs(transaction, sign) {
                     }
                 }
             }
-               
+
             blockWorker.terminate();
             console.log('Got address balances.', pair.inputAddresses.length);
             process_verify_transaction(transaction, sign);
@@ -1013,11 +1013,11 @@ function getInputs(transaction, sign) {
 
 // ----------------------------------------------------------------------------
 // Parse input / verification
-// 
+//
 
-function process_verify_transaction(transaction, sign) 
-{    
-    var total_in = 0, 
+function process_verify_transaction(transaction, sign)
+{
+    var total_in = 0,
         total_out = 0,
         external_address = '',
         external_amount = 0,
@@ -1029,11 +1029,11 @@ function process_verify_transaction(transaction, sign)
 
     // Get outputs and amounts
     tx_details += "\nOutputs:\n";
-        
+
     var keyring = [];
     for (var j = 0; j < sign.checkpub.length; j++)
         keyring.push(sign.checkpub[j].pubkey);
-    
+
     for (var i = 0; i < transaction.outputs.length; i++) {
         var address, amount, present;
         address = transaction.outputs[i].script
@@ -1046,18 +1046,18 @@ function process_verify_transaction(transaction, sign)
         present = false;
         for (var j = 0; j < sign.checkpub.length; j++) {
             var checkaddress;
-            var pubk = sign.checkpub[j].pubkey; 
-            
+            var pubk = sign.checkpub[j].pubkey;
+
             // p2pkh
             checkaddress = new Bitcore.Address.fromPublicKey(new Bitcore.PublicKey(pubk, COINNET)).toString();
-            
+
             if (checkaddress === address)
-                present = sign.checkpub[j].present; 
-            
+                present = sign.checkpub[j].present;
+
             // multisig, any m of n
             for (var m = 0; m < keyring.length + 1; m++) {
                 checkaddress = new Bitcore.Address(keyring, m).toString();
-            
+
                 if (checkaddress === address)
                     present = sign.checkpub[j].present;
             }
@@ -1086,15 +1086,15 @@ function process_verify_transaction(transaction, sign)
         ui.sendLockedMode.style.display = "none";
         tx_lock_pin = '';
     }
-    
-    
+
+
     // Display short result
     ui.sendDetails.style.display = "none";
     ui.sendAddress.innerHTML = external_address;
     ui.sendAmount.innerHTML = external_amount;
     displayDialog(dialog.send);
 
-    
+
     // Get input addresses and balances
     tx_details += "\nInputs:\n";
     for (var i = 0; i < pair.inputAddresses.length; i++) {
@@ -1104,8 +1104,8 @@ function process_verify_transaction(transaction, sign)
         tx_details += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '</span>';
         total_in += balance / SAT2BTC;
     }
-    
-    
+
+
     // Calculate fee (inputs - outputs)
     res = "Fee:\n" + (total_in - total_out).toFixed(8) + " BTC\n";
     if ((total_in - total_out) < 0) {
@@ -1113,9 +1113,9 @@ function process_verify_transaction(transaction, sign)
                      '\nDid not receive all input amounts from the blockchain explorers. ' +
                      'The fee is equal to the total input amounts minus the total output amounts.\n' +
                      'Check your internet settings and try again.\n</span>' + tx_details;
-        
+
         err += '<br>WARNING: Could not calculate the fee.<br>';
-                
+
     } else if ((total_in - total_out) * SAT2BTC > WARNFEE) {
         tx_details = '<span style="color: ' + DBB_COLOR_DANGER + ';">' + res + '</span>' + tx_details;
     } else {
@@ -1132,28 +1132,28 @@ function process_verify_transaction(transaction, sign)
             var nhashtype,
                 script,
                 sighash;
-            
+
             nhashtype = Bitcore.crypto.Signature.SIGHASH_ALL;
             script = transaction.inputs[i].script;
-            
+
             // p2pkh
             sighash = Bitcore.Transaction
                       .sighash
                       .sighash(transaction, nhashtype, i, script);
-            
+
             if (sign.data[j].hash === Reverse(sighash).toString('hex'))
-                present = true; 
-            
+                present = true;
+
             // multisig
             // FIXME Hack to extract the redeem script, which is the 2nd to last chunk.
             //       Could not find a clean way to get the script using Bitcore functions.
-            script = script.chunks[script.chunks.length - 1].buf; 
+            script = script.chunks[script.chunks.length - 1].buf;
             sighash = Bitcore.Transaction
                       .sighash
                       .sighash(transaction, nhashtype, i, script);
-            
+
             if (sign.data[j].hash === Reverse(sighash).toString('hex'))
-                present = true; 
+                present = true;
         }
 
         if (present === false) {
@@ -1168,11 +1168,11 @@ function process_verify_transaction(transaction, sign)
             tx_details += '<span style="color: ' + DBB_COLOR_SAFE + ';">' + res + '<br></span>';
         }
     }
-    
-    
+
+
     // Extra information
     console.log("2FA message received:\n" + JSON.stringify(sign, undefined, 4));
-            
+
     if (err != '')
         ui.sendError.innerHTML = '<span style="color: ' + DBB_COLOR_DANGER + ';">' + err + '</span>';
     else
@@ -1180,17 +1180,17 @@ function process_verify_transaction(transaction, sign)
 }
 
 
-function process_dbb_pairing(parse) 
-{    
+function process_dbb_pairing(parse)
+{
     var ciphertext = parse.verifypass.ciphertext;
     var pubkey = parse.verifypass.ecdh;
     var ecdh_secret = ecdh.computeSecret(pubkey, 'hex', 'hex');
-    
+
     localData.verification_key = Crypto.createHash('sha256').update(new Buffer(ecdh_secret, 'hex')).digest('hex');
     localData.verification_key = Crypto.createHash('sha256').update(new Buffer(localData.verification_key, 'hex')).digest('hex');
     var k = new Buffer(localData.verification_key, "hex");
     for (var i = 0; i < pair.blinkcode.length; i++) {
-        k[i % 32] ^= pair.blinkcode[i]; 
+        k[i % 32] ^= pair.blinkcode[i];
     }
     localData.verification_key = k.toString('hex');
     localData.verification_key = Crypto.createHash('sha256').update(new Buffer(localData.verification_key, 'ascii')).digest('hex');
@@ -1206,10 +1206,10 @@ function process_dbb_pairing(parse)
         displayDialog(dialog.pairFail);
     }
 }
-  
 
-function process_verify_address(plaintext, type) 
-{    
+
+function process_verify_address(plaintext, type)
+{
     var parse = '';
 
     if (type === 'p2pkh')
@@ -1218,8 +1218,8 @@ function process_verify_address(plaintext, type)
         // FIXME - use Bitcore.Address https://bitcore.io/api/lib/address
         //parse = ... ;
     }
-    
-    if (parse) 
+
+    if (parse)
         parse = "<pre>" + parse + "</pre>";
     else
         parse = 'Error: Coin network not defined.';
@@ -1232,33 +1232,33 @@ function process_verify_address(plaintext, type)
 function parseData(data)
 {
     try {
-            
+
         if (data == '') {
             server_poll_pause = false;
             pair.QRtext = [];
             return;
         }
-        
-        
+
+
         // QR sequence reader
         if (data.slice(0,2).localeCompare('QS') == 0) {
             var text = '';
             var inprogress = false;
             var seqNumber = data[2]; // {0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ}
             var seqTotal = data[3];
-          
+
             server_poll_pause = true;
 
             if (isNaN(seqNumber)) {
                 seqNumber = seqNumber.toUpperCase().charCodeAt(0);
                 seqNumber = seqNumber - "A".charCodeAt(0) + 10;
             }
-            
+
             if (isNaN(seqTotal)) {
                 seqTotal = seqTotal.toUpperCase().charCodeAt(0);
                 seqTotal = seqTotal - "A".charCodeAt(0) + 10;
             }
-            
+
             pair.QRtext[seqNumber] = data.substring(4);
 
             for (var i = 0; i < seqTotal; i++) {
@@ -1272,24 +1272,24 @@ function parseData(data)
                         text += '<span style="color:' + DBB_COLOR_BLACK + '">&#9724;</span>';
                 }
             }
-           
+
             if (inprogress) {
                 ui.qrSequenceText.innerHTML = 'continue scanning<br>' + text;
                 displayDialog(dialog.qrSequence);
                 setTimeout(startScan, 1500); // ms
                 return;
             }
-            
+
             data = pair.QRtext.join('');
             pair.QRtext = [];
         }
-       
+
 
         if (data.slice(0,8).localeCompare('bitcoin:') == 0) {
             var address = '',
                 params,
                 amount;
-                
+
             verification_in_progress = true;
 
             if (data.indexOf('?') > -1) {
@@ -1301,7 +1301,7 @@ function parseData(data)
             }
 
             ui.bitcoinUriAddress.innerHTML = address;
-            
+
             if (amount)
                 ui.bitcoinUriAmount.innerHTML = '<big>' + amount + ' BTC</big><br><br><i class="fa fa-long-arrow-down fa-lg"></i><br><br>'
             else
@@ -1310,10 +1310,10 @@ function parseData(data)
             displayDialog(dialog.bitcoinUri);
             return;
         }
-        
-        
+
+
         data = JSON.parse(data);
-        
+
         // Tests if already paired to Digital Bitbox
         if (typeof data.tfa == "string") {
             console.log('tfa value', data.tfa);
@@ -1326,11 +1326,11 @@ function parseData(data)
             }
             return;
         }
-            
+
         // Server requested action
         if (typeof data.action == "string") {
             console.log('server request:', data.action);
-            
+
             if (data.action == "clear") {
                 if (localData.verification_key === '')
                     displayDialog(dialog.pairDbb);
@@ -1338,7 +1338,7 @@ function parseData(data)
                     waiting();
                 return;
             }
-            
+
             if (data.action == "ping") {
                 serverSendEncrypt('{"action":"pong"}');
                 return;
@@ -1355,8 +1355,8 @@ function parseData(data)
         if (typeof data.id == "string") {
             console.log('Setting ID:', data.id, ' - Key:', data.key);
             data.key = new Buffer(data.key, 'base64').toString('hex')
-            
-            // do hmac_sha256    
+
+            // do hmac_sha256
             /*
                 var hash = Crypto.createHmac('sha256', data.key)
                    .update(data.key)
@@ -1366,7 +1366,7 @@ function parseData(data)
             localData.server_id = data.id;
             localData.server_key = data.key;
             writeLocalData();
-            
+
             if (localData.verification_key === '')
                 displayDialog(dialog.pairDbb);
             else
@@ -1376,8 +1376,8 @@ function parseData(data)
             console.log('Setting ID:', data.id, ' - Key:', data.key);
             serverSendEncrypt('{"id":"success"}');
             return;
-        } 
-        
+        }
+
 
         // Finalizes ECDH pairing to Digital Bitbox
         if (typeof data.verifypass == "object") {
@@ -1385,7 +1385,7 @@ function parseData(data)
             if (localData.verification_key === '')
                 process_dbb_pairing(data);
             return;
-        } 
+        }
 
 
         if (typeof data.echo == "string") {
@@ -1396,16 +1396,16 @@ function parseData(data)
             if (plaintext === ciphertext) {
                 console.log('Could not parse: ' + JSON.stringify(plaintext, undefined, 4));
                 displayDialog(dialog.parseError);
-                return; 
+                return;
             }
-           
+
             // Verify receiving address
             if (plaintext.slice(0,4).localeCompare('xpub') == 0) {
                 verification_in_progress = true;
                 process_verify_address(plaintext, data.type);
                 return;
             }
-            
+
             // Verify random number
             if (typeof JSON.parse(plaintext).random == "string") {
                 ui.randomNumber.innerHTML = JSON.parse(plaintext).random;
@@ -1415,13 +1415,13 @@ function parseData(data)
 
             // Verify transaction
             if (typeof JSON.parse(plaintext).sign == "object") {
-        
+
                 displayDialog(dialog.connectCheck);
                 ui.connectCheck.innerHTML = 'Processing...';
-                
+
                 var transaction;
                 var sign = JSON.parse(plaintext).sign;
-                
+
                 if (typeof data.tx == "string") {
                     var hash;
                     hash = Crypto.createHash('sha256')
@@ -1431,13 +1431,13 @@ function parseData(data)
                                  .update(new Buffer(hash, 'hex'))
                                  .digest()
                                  .toString('hex');
-                    
+
                     if (hash !== sign.meta) {
                         console.log('Error: mismatched verification data.');
                         displayDialog(dialog.txError);
                         return;
                     }
-                     
+
                     transaction = new Bitcore.Transaction(data.tx);
                 } else {
                     transaction = new Bitcore.Transaction(sign.meta);
@@ -1445,12 +1445,12 @@ function parseData(data)
 
                 if (typeof JSON.parse(plaintext).pin == "string")
                     sign.pin = JSON.parse(plaintext).pin;
-                    
+
                 verification_in_progress = true;
                 getInputs(transaction, sign); // calls process_verify_transaction() after getting input values
                 return;
             }
-                
+
             console.log('No operation for: ' + JSON.stringify(data, undefined, 4));
             displayDialog(dialog.parseError);
             return;
@@ -1458,7 +1458,7 @@ function parseData(data)
 
         console.log('Unknown input: ' + JSON.stringify(data, undefined, 4));
         displayDialog(dialog.parseError);
-    
+
     }
     catch(err) {
         console.log(err, data);
