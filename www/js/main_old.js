@@ -26,7 +26,7 @@
 
 'use strict';
 
-var VERSION = '3.0.4'; // match to version in config.xml
+var VERSION = '3.0.5'; // match to version in config.xml
 
 var Crypto = require("crypto");
 var Bitcore = require("bitcore-lib");
@@ -333,6 +333,9 @@ function startUp() {
     serverPoll();
 }
 
+function isNumeric(input) {
+    return !Number.isNaN(parseFloat(input)) && Number.isFinite(+input);
+}
 
 // ----------------------------------------------------------------------------
 // Network status (debugging)
@@ -471,7 +474,7 @@ function checkUpdatePost(display) {
         if (req.readyState == 4) {
             if (req.status == 200) {
                 update_server.reply = JSON.parse(req.responseText);
-                ui.checkUpdateText.innerHTML = update_server.reply.message;
+                ui.checkUpdateText.innerText = update_server.reply.message;
                 ui.checkUpdateUrlFollowButton.style.display = ((update_server.reply.url == '') ? 'none' : 'inline-block');
                 hideOptionButtons();
                 if (display) {
@@ -602,24 +605,24 @@ function serverUrlCancel() {
 
 function blinkCodeStrength() {
     if (pair.blinkcode.length == 0) {
-        ui.pairStrength.innerHTML = "&nbsp;";
+        ui.pairStrength.innerText = "&nbsp;";
     } else if (pair.blinkcode.length < 3) {
-        ui.pairStrength.innerHTML = "Low strength";
+        ui.pairStrength.innerText = "Low strength";
         ui.pairStrength.style.color = DBB_COLOR_DANGER;
     } else if (pair.blinkcode.length < 5) {
-        ui.pairStrength.innerHTML = "Medium strength";
+        ui.pairStrength.innerText = "Medium strength";
         ui.pairStrength.style.color = DBB_COLOR_WARN;
     } else if (pair.blinkcode.length > 5) {
-        ui.pairStrength.innerHTML = "&nbsp;";
+        ui.pairStrength.innerText = "&nbsp;";
         ui.pairStrength.style.color = DBB_COLOR_BLACK;
     } else {
-        ui.pairStrength.innerHTML = "&nbsp;";
+        ui.pairStrength.innerText = "&nbsp;";
     }
 
     if (pair.blinkcode.length == 0)
-        ui.pairProgress.innerHTML = "&nbsp;";
+        ui.pairProgress.innerText = "&nbsp;";
     else
-        ui.pairProgress.innerHTML = '<b>' + Array(pair.blinkcode.length + 1).join(" * ") + '</b>';
+        ui.pairProgress.innerText = Array(pair.blinkcode.length + 1).join(" * ");
 }
 
 
@@ -657,29 +660,6 @@ function pairAgain() {
     hideOptionButtons();
     displayDialog(dialog.pairDbb);
 }
-
-/*
-var Base58Check = require('bs58check');
-function pairManual() {
-    displayDialog(null);
-
-    var pubkey = ecdhPubkey();
-        pubkey = Base58Check.encode(new Buffer(pubkey.toString('hex'), 'hex'));
-
-    ui.pairManualText.innerHTML =
-                'Enter this in the PC app:<br><br>' +
-                '<span style="color: ' + DBB_COLOR_WARN + ';">' +
-                pubkey.slice(0, pubkey.length / 2) + '<br>' +
-                pubkey.slice(pubkey.length / 2) + '</span>' +
-                '<br><br><br>Then begin, and your Digital Bitbox will blink.<br><pre>' +
-                '- Count the number of blinks in each set.\n' +
-                '- Enter those numbers here.\n' +
-                '- Stop anytime by tapping the Digital Bitbox\'s touch button.</pre>';
-
-    serverSendEncrypt('{"ecdh":"manual"}');
-}
-*/
-
 
 // ----------------------------------------------------------------------------
 // Local storage
@@ -834,7 +814,7 @@ function startScan()
     try {
     cordova.plugins.barcodeScanner.scan(
         function (result) {
-            parseData(result.text);
+            parseQRCode(result.text);
         },
         function (error) {
             console.log("Scanning failed: " + error);
@@ -1090,8 +1070,8 @@ function process_verify_transaction(transaction, sign)
 
     // Display short result
     ui.sendDetails.style.display = "none";
-    ui.sendAddress.innerHTML = external_address;
-    ui.sendAmount.innerHTML = external_amount;
+    ui.sendAddress.innerText = external_address;
+    ui.sendAmount.innerText = external_amount;
     displayDialog(dialog.send);
 
 
@@ -1176,7 +1156,7 @@ function process_verify_transaction(transaction, sign)
     if (err != '')
         ui.sendError.innerHTML = '<span style="color: ' + DBB_COLOR_DANGER + ';">' + err + '</span>';
     else
-        ui.sendError.innerHTML = '';
+        ui.sendError.innerText = '';
 }
 
 
@@ -1219,18 +1199,15 @@ function process_verify_address(plaintext, type)
         //parse = ... ;
     }
 
-    if (parse)
-        parse = "<pre>" + parse + "</pre>";
-    else
+    if (!parse) {
         parse = 'Error: Coin network not defined.';
+    }
 
-    ui.receiveAddress.innerHTML = parse;
+    ui.receiveAddress.innerText = parse;
     displayDialog(dialog.receive);
 }
 
-
-function parseData(data)
-{
+function parseQRCode(data) {
     try {
 
         if (data == '') {
@@ -1300,18 +1277,36 @@ function parseData(data)
                 address = data.slice(8);
             }
 
-            ui.bitcoinUriAddress.innerHTML = address;
+            if (!Bitcore.Address.isValid(address)) {
+                Display.displayDialog(dialog.parseError, dialog);
+                return;
+            }
+            ui.bitcoinUriAddress.innerText = address;
 
-            if (amount)
-                ui.bitcoinUriAmount.innerHTML = '<big>' + amount + ' BTC</big><br><br><i class="fa fa-long-arrow-down fa-lg"></i><br><br>'
-            else
-                ui.bitcoinUriAmount.innerHTML = '';
+            if (amount) {
+                if (!isNumeric(amount)) {
+                    Display.displayDialog(dialog.parseError, dialog);
+                    return;
+                }
+                ui.bitcoinUriAmount.innerHTML = '<big>' + amount + ' ' + 'BTC' + '</big><br><br><i class="fa fa-long-arrow-down fa-lg"></i><br><br>'
+            } else {
+                ui.bitcoinUriAmount.innerText = '';
+            }
 
-            displayDialog(dialog.bitcoinUri);
+            Display.displayDialog(dialog.bitcoinUri, dialog);
             return;
         }
+    }
+    catch(err) {
+        console.log(err, data);
+        Display.displayDialog(dialog.parseError, dialog);
+    }
+}
 
 
+function parseData(data)
+{
+    try {
         data = JSON.parse(data);
 
         // Tests if already paired to Digital Bitbox
@@ -1408,7 +1403,7 @@ function parseData(data)
 
             // Verify random number
             if (typeof JSON.parse(plaintext).random == "string") {
-                ui.randomNumber.innerHTML = JSON.parse(plaintext).random;
+                ui.randomNumber.innerText = JSON.parse(plaintext).random;
                 displayDialog(dialog.randomNumber);
                 return;
             }
@@ -1417,7 +1412,7 @@ function parseData(data)
             if (typeof JSON.parse(plaintext).sign == "object") {
 
                 displayDialog(dialog.connectCheck);
-                ui.connectCheck.innerHTML = 'Processing...';
+                ui.connectCheck.innerText = 'Processing...';
 
                 var transaction;
                 var sign = JSON.parse(plaintext).sign;

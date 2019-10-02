@@ -170,23 +170,6 @@
             <button id="pair-begin-button" class="buttonSimple">Begin</button>
         </div>
 
-        <!-- <div id="pair-confirm-not-blinked-dialog" class="hidden">
-            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp;
-            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp;
-            <img class="fa" style="opacity:0" src="img/dbb.png" width="30" />
-            <span class="fa led">
-                <img src="img/dbb_blink.png" width="30" />
-                <img class="top" src="img/dbb.png" width="30" />
-            </span>
-            <br><br>
-            <div class="infoText light">
-              The pairing was initiated. Did your bitbox blink quickly?
-            </div>
-            <button id="pair-abort1-button" class="buttonSimple">Yes it did</button>
-            <button id="pair-abort2-button" class="buttonSimple">I don't know</button>
-            <button id="pair-continue-button" class="buttonSimple">No it didn't</button>
-        </div> -->
-
         <div id="pair-challenge-dialog" class="hidden" style="margin-top:-40px; margin-bottom:-40px">
             <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp;
             <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp;
@@ -211,7 +194,7 @@
             <br>
             <progress id="pair-challenge-progress" value="0" max="13" class="hidden" 
                 style="margin-top: 25px;"></progress>
-            <div id="pair-challenge-continue-note" class="hidden" style="font-style: italic; color:olivedrab; margin-top: 25px;">Mimimum security confirmed. You may continue or finish.</div>
+            <div id="pair-challenge-continue-note" class="hidden" style="font-style: italic; color:olivedrab; margin-top: 25px;">Minimum security confirmed. You may continue or finish.</div>
         </div>
 
         <div id="pair-success-dialog" class="hidden">
@@ -222,21 +205,6 @@
             <button id="pair-success-button" class="buttonSimple">Continue</button>
             <div class="infoText light">
                 Successfully paired!
-            </div>
-        </div>
-
-        <div id="pair-suspicious-dialog" class="hidden">
-            <i class="fa fa-mobile fa-4x"></i>&nbsp;&nbsp;
-            <i class="fa fa-arrows-h fa-2x"></i>&nbsp;&nbsp;
-            <img class="fa" src="img/dbb.png" width="30" />
-            <br><br>
-            <button id="pair-suspicious-disconnect-button" class="buttonSimple">Retry</button>
-            <div class="infoText light">
-                Pairing aborted.<br><br>
-                You are seeing this dialog because the Bitbox did not behave as
-                expected. It is possible that a malicious software is trying to interfere with the
-                pairing. Make sure you have the original Bitbox desktop software installed. If
-                you're uncertain, contact our support.
             </div>
         </div>
 
